@@ -1,0 +1,10 @@
+[package]
+name = "playground"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = "=0.3.28"
+packet = "=0.1.4"
+tokio = { version = "=1.29.1", features = ["rt-multi-thread"] }
+tun = { version = "=0.5.5", features = ["async"] }
