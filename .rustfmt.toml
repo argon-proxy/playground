@@ -1,0 +1,10 @@
+max_width = 120
+wrap_comments = true
+format_macro_matchers = true
+match_block_trailing_comma = true
+overflow_delimited_expr = true
+
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+imports_layout = "HorizontalVertical"
+reorder_modules = true

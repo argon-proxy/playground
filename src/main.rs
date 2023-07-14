@@ -1,66 +1,54 @@
-use futures::{SinkExt, StreamExt};
-use packet::{builder::Builder, icmp, ip, Packet};
-use tun::{self, Configuration, Device, TunPacket};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-#[tokio::main]
-async fn main() {
-    let mut config = Configuration::default();
+use clap::Parser;
 
-    config
-        .address((10, 0, 0, 1))
-        .netmask((255, 255, 255, 0))
-        .up();
+mod cli;
+use cli::Cli;
 
-    #[cfg(target_os = "linux")]
-    config.platform(|config| {
-        config.packet_information(true);
-    });
+mod device;
+use device::Tun;
 
-    let dev = tun::create_as_async(&config).unwrap();
+mod error;
+use error::TunRackError;
+use futures::StreamExt;
+use rack::TunRack;
 
-    println!("created tun device {}", dev.get_ref().name());
+mod rack;
 
-    let mut framed = dev.into_framed();
+mod slots;
+use slots::ping::PingSlotBuilder;
 
-    while let Some(packet) = framed.next().await {
-        match packet {
-            Ok(pkt) => match ip::Packet::new(pkt.get_bytes()) {
-                Ok(ip::Packet::V4(pkt)) => match icmp::Packet::new(pkt.payload()) {
-                    Ok(icmp) => match icmp.echo() {
-                        Ok(icmp) => {
-                            let reply = ip::v4::Builder::default()
-                                .id(0x42)
-                                .unwrap()
-                                .ttl(64)
-                                .unwrap()
-                                .source(pkt.destination())
-                                .unwrap()
-                                .destination(pkt.source())
-                                .unwrap()
-                                .icmp()
-                                .unwrap()
-                                .echo()
-                                .unwrap()
-                                .reply()
-                                .unwrap()
-                                .identifier(icmp.identifier())
-                                .unwrap()
-                                .sequence(icmp.sequence())
-                                .unwrap()
-                                .payload(icmp.payload())
-                                .unwrap()
-                                .build()
-                                .unwrap();
-                            framed.send(TunPacket::new(reply)).await.unwrap();
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                },
-                Err(err) => println!("Received an invalid packet: {:?}", err),
-                _ => {}
-            },
-            Err(err) => panic!("Error: {:?}", err),
+fn main() {
+    let cli = Cli::parse();
+
+    let result = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_name_fn(|| {
+            static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
+            let id = ATOMIC_ID.fetch_add(1, Ordering::SeqCst);
+            format!("argon-{}", id)
+        })
+        .build()
+        .unwrap()
+        .block_on(async move { run(cli).await });
+
+    if let Err(e) = result {
+        println!("error: {:?}", e);
+    }
+}
+
+async fn run(cli: Cli) -> Result<(), TunRackError> {
+    let mut tun = Tun::new(cli.mtu)?;
+
+    let mut rack = TunRack::new(cli.channel_size);
+
+    rack.add_slot(Box::new(PingSlotBuilder::new()));
+
+    while let Some(packet) = tun.next().await {
+        if let Ok(packet) = packet {
+            rack.process(packet).await?
         }
     }
+
+    Ok(())
 }
