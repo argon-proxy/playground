@@ -10,13 +10,13 @@ use device::Tun;
 
 mod error;
 use error::TunRackError;
-use futures::StreamExt;
+use futures::{SinkExt, StreamExt};
 use rack::TunRack;
 
 mod rack;
 
 mod slots;
-use slots::log::LogSlotBuilder;
+use slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 
 fn main() {
     let cli = Cli::parse();
@@ -40,8 +40,9 @@ fn main() {
 async fn run(cli: Cli) -> Result<(), TunRackError> {
     let mut tun = Tun::new(cli.mtu)?;
 
-    let mut rack = TunRack::new(cli.channel_size);
+    let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
+    rack.add_slot(Box::new(PingSlotBuilder::new()));
     rack.add_slot(Box::new(LogSlotBuilder::new()));
 
     loop {
@@ -52,10 +53,17 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
                 rack.send(packet).await?;
             }
 
-            Some(result) = rack.next() => {
-                let tun_packet = result?;
+            option = rack_exit_rx.recv() => {
+                if let Some(tun_packet) = option {
+                    tun.send(tun_packet).await.map_err(TunRackError::TunIoError)?;
+                } else {
+                    return Err(TunRackError::TunRackChannelClosed);
+                }
+            }
 
-                println!("tunrack dropping packet {:?}", tun_packet);
+            Some(result) = rack.next() => {
+                // Consume any packet that goes through the tun_rack and does not get forwarded through the exit_tx
+                drop(result?);
             }
         }
     }

@@ -16,6 +16,9 @@ pub enum TunRackError {
     #[error("TunRackSlotCrash")]
     TunRackSlotCrash,
 
+    #[error("TunRackChannelClosed")]
+    TunRackChannelClosed,
+
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),
 }
