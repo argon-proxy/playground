@@ -1,1 +1,1 @@
-pub mod ping;
+pub mod log;

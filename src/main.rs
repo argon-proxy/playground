@@ -16,7 +16,7 @@ use rack::TunRack;
 mod rack;
 
 mod slots;
-use slots::ping::PingSlotBuilder;
+use slots::log::LogSlotBuilder;
 
 fn main() {
     let cli = Cli::parse();
@@ -42,13 +42,21 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let mut rack = TunRack::new(cli.channel_size);
 
-    rack.add_slot(Box::new(PingSlotBuilder::new()));
+    rack.add_slot(Box::new(LogSlotBuilder::new()));
 
-    while let Some(packet) = tun.next().await {
-        if let Ok(packet) = packet {
-            rack.process(packet).await?
+    loop {
+        tokio::select! {
+            Some(result) = tun.next() => {
+                let packet = result.map_err(TunRackError::TunIoError)?;
+
+                rack.send(packet).await?;
+            }
+
+            Some(result) = rack.next() => {
+                let tun_packet = result?;
+
+                println!("tunrack dropping packet {:?}", tun_packet);
+            }
         }
     }
-
-    Ok(())
 }

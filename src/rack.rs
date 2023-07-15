@@ -1,3 +1,8 @@
+use futures::{FutureExt, Stream};
+use tokio::task::JoinHandle;
+
+use crate::error::TunRackError;
+
 pub type TunRackSlotSender = tokio::sync::mpsc::Sender<tun::TunPacket>;
 pub type TunRackSlotReceiver = tokio::sync::mpsc::Receiver<tun::TunPacket>;
 
@@ -7,14 +12,28 @@ pub fn build_tunrack_channel(channel_size: usize) -> (TunRackSlotSender, TunRack
     tokio::sync::mpsc::channel(channel_size)
 }
 
-pub trait TunRackSlot {}
+pub trait TunRackSlot {
+    fn run(self: Box<Self>) -> TunRackSlotHandle;
+}
+
+pub type TunRackSlotHandleResult = Result<(), TunRackError>;
+
+pub struct TunRackSlotHandle {
+    pub handle: JoinHandle<TunRackSlotHandleResult>,
+}
+
+impl TunRackSlotHandle {
+    pub fn new(handle: JoinHandle<TunRackSlotHandleResult>) -> Self {
+        Self { handle }
+    }
+}
 
 pub trait TunRackSlotBuilder {
     fn build(self: Box<Self>, rx: TunRackSlotReceiver, tx: TunRackSlotSender) -> Box<dyn TunRackSlot>;
 }
 
 pub struct TunRack {
-    racks: Vec<Box<dyn TunRackSlot>>,
+    racks: Vec<TunRackSlotHandle>,
 
     channel_size: usize,
     tx: TunRackSlotSender,
@@ -40,10 +59,34 @@ impl TunRack {
 
         let slot = slot.build(slot_rx, slot_tx);
 
-        self.racks.push(slot);
+        self.racks.push(slot.run());
     }
 
-    pub async fn process(&mut self, packet: tun::TunPacket) -> Result<(), TunRackSendError> {
+    pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), TunRackSendError> {
         self.tx.send(packet).await
+    }
+}
+
+impl Stream for TunRack {
+    type Item = Result<tun::TunPacket, TunRackError>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        for slot in &mut self.racks {
+            if let std::task::Poll::Ready(result) = slot.handle.poll_unpin(cx) {
+                return std::task::Poll::Ready(Some(Err(match result {
+                    Ok(item) => item.err().unwrap_or(TunRackError::TunRackSlotCrash),
+                    Err(e) => TunRackError::TokioJoinError(e),
+                })));
+            }
+        }
+
+        if let std::task::Poll::Ready(result) = self.rx.poll_recv(cx) {
+            std::task::Poll::Ready(Some(result.ok_or(TunRackError::TunRackSlotCrash)))
+        } else {
+            std::task::Poll::Pending
+        }
     }
 }
