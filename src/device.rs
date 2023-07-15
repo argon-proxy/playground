@@ -24,7 +24,7 @@ impl Tun {
 
         let device = tun::create_as_async(&config)?;
 
-        let mut frame = device.into_framed();
+        let frame = device.into_framed();
 
         Ok(Self { frame, config })
     }

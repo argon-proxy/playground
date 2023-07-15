@@ -1,41 +1,22 @@
 use futures::{FutureExt, Stream};
-use tokio::task::JoinHandle;
 
+use self::{
+    slot::TunRackSlot,
+    slot_builder::TunRackSlotBuilder,
+    slot_handle::TunRackSlotHandle,
+    util::build_tunrack_channel,
+};
 use crate::error::TunRackError;
+
+pub mod runner;
+pub mod slot;
+pub mod slot_builder;
+pub mod slot_handle;
+pub mod util;
 
 pub type TunRackSlotSender = tokio::sync::mpsc::Sender<tun::TunPacket>;
 pub type TunRackSlotReceiver = tokio::sync::mpsc::Receiver<tun::TunPacket>;
-
 pub type TunRackSendError = tokio::sync::mpsc::error::SendError<tun::TunPacket>;
-
-pub fn build_tunrack_channel(channel_size: usize) -> (TunRackSlotSender, TunRackSlotReceiver) {
-    tokio::sync::mpsc::channel(channel_size)
-}
-
-pub trait TunRackSlot {
-    fn run(self: Box<Self>) -> TunRackSlotHandle;
-}
-
-pub type TunRackSlotHandleResult = Result<(), TunRackError>;
-
-pub struct TunRackSlotHandle {
-    pub handle: JoinHandle<TunRackSlotHandleResult>,
-}
-
-impl TunRackSlotHandle {
-    pub fn new(handle: JoinHandle<TunRackSlotHandleResult>) -> Self {
-        Self { handle }
-    }
-}
-
-pub trait TunRackSlotBuilder {
-    fn build(
-        self: Box<Self>,
-        rx: TunRackSlotReceiver,
-        tx: TunRackSlotSender,
-        exit_tx: TunRackSlotSender,
-    ) -> Box<dyn TunRackSlot>;
-}
 
 pub struct TunRack {
     racks: Vec<TunRackSlotHandle>,
@@ -66,12 +47,16 @@ impl TunRack {
         )
     }
 
-    pub fn add_slot(&mut self, slot: Box<dyn TunRackSlotBuilder>) {
+    pub fn add_slot<ST, SB>(&mut self, slot_builder: SB)
+    where
+        ST: TunRackSlot,
+        SB: TunRackSlotBuilder<ST>,
+    {
         let (slot_tx, mut slot_rx) = build_tunrack_channel(self.channel_size);
 
         std::mem::swap(&mut self.last_rx, &mut slot_rx);
 
-        let slot = slot.build(slot_rx, slot_tx, self.exit_tx.clone());
+        let slot = slot_builder.build(slot_rx, slot_tx, self.exit_tx.clone());
 
         self.racks.push(slot.run());
     }

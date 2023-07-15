@@ -1,7 +1,13 @@
 use packet::{Builder, Packet};
 use tun::TunPacket;
 
-use crate::rack::{TunRackSlot, TunRackSlotBuilder, TunRackSlotHandle, TunRackSlotReceiver, TunRackSlotSender};
+use crate::rack::{
+    slot::TunRackSlot,
+    slot_builder::TunRackSlotBuilder,
+    slot_handle::TunRackSlotHandle,
+    TunRackSlotReceiver,
+    TunRackSlotSender,
+};
 
 pub struct PingSlotBuilder {}
 
@@ -11,14 +17,9 @@ impl PingSlotBuilder {
     }
 }
 
-impl TunRackSlotBuilder for PingSlotBuilder {
-    fn build(
-        self: Box<Self>,
-        rx: TunRackSlotReceiver,
-        tx: TunRackSlotSender,
-        exit_tx: TunRackSlotSender,
-    ) -> Box<dyn TunRackSlot> {
-        Box::new(PingSlot::new(rx, tx, exit_tx))
+impl TunRackSlotBuilder<PingSlot> for PingSlotBuilder {
+    fn build(self, rx: TunRackSlotReceiver, tx: TunRackSlotSender, exit_tx: TunRackSlotSender) -> PingSlot {
+        PingSlot::new(rx, tx, exit_tx)
     }
 }
 
@@ -35,7 +36,7 @@ impl PingSlot {
 }
 
 impl TunRackSlot for PingSlot {
-    fn run(self: Box<Self>) -> TunRackSlotHandle {
+    fn run(self) -> TunRackSlotHandle {
         let mut rx = self.rx;
         let tx = self.tx;
         let exit_tx = self.exit_tx;
