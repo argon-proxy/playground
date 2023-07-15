@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use clap::Parser;
+use futures::{SinkExt, StreamExt};
 
 mod cli;
 use cli::Cli;
@@ -10,10 +11,9 @@ use device::Tun;
 
 mod error;
 use error::TunRackError;
-use futures::{SinkExt, StreamExt};
-use rack::TunRack;
 
 mod rack;
+use rack::TunRack;
 
 mod slots;
 use slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
@@ -42,8 +42,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingSlotBuilder::new());
-    rack.add_slot(LogSlotBuilder::new());
+    rack.add_slot(PingSlotBuilder::default());
+    rack.add_slot(LogSlotBuilder::default());
 
     loop {
         tokio::select! {

@@ -1,92 +1,79 @@
+use async_trait::async_trait;
 use packet::{Builder, Packet};
-use tun::TunPacket;
 
-use crate::rack::{
-    slot::TunRackSlot,
-    slot_builder::TunRackSlotBuilder,
-    slot_handle::TunRackSlotHandle,
-    TunRackSlotReceiver,
-    TunRackSlotSender,
-};
+use crate::rack::slot::{SlotPacket, TunRackSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 
 pub struct PingSlotBuilder {}
 
-impl PingSlotBuilder {
-    pub fn new() -> Self {
+impl Default for PingSlotBuilder {
+    fn default() -> Self {
         Self {}
     }
 }
 
 impl TunRackSlotBuilder<PingSlot> for PingSlotBuilder {
-    fn build(self, rx: TunRackSlotReceiver, tx: TunRackSlotSender, exit_tx: TunRackSlotSender) -> PingSlot {
-        PingSlot::new(rx, tx, exit_tx)
+    fn build(self) -> PingSlot {
+        PingSlot {}
     }
 }
 
-pub struct PingSlot {
-    rx: TunRackSlotReceiver,
-    tx: TunRackSlotSender,
-    exit_tx: TunRackSlotSender,
-}
+pub struct PingSlot {}
 
-impl PingSlot {
-    pub fn new(rx: TunRackSlotReceiver, tx: TunRackSlotSender, exit_tx: TunRackSlotSender) -> Self {
-        Self { rx, tx, exit_tx }
-    }
-}
-
+#[async_trait]
 impl TunRackSlot for PingSlot {
-    fn run(self) -> TunRackSlotHandle {
-        let mut rx = self.rx;
-        let tx = self.tx;
-        let exit_tx = self.exit_tx;
+    type Event = ();
+    type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
+    type Action = ();
 
-        let handle = tokio::spawn(async move {
-            while let Some(tun_packet) = rx.recv().await {
-                match packet::ip::Packet::new(tun_packet.get_bytes()) {
-                    Ok(packet::ip::Packet::V4(ipv4_packet)) => match packet::icmp::Packet::new(ipv4_packet.payload()) {
-                        Ok(icmp_packet) => match icmp_packet.echo() {
-                            Ok(icmp_echo_packet) => {
-                                let reply = packet::ip::v4::Builder::default()
-                                    .id(0x42)
-                                    .unwrap()
-                                    .ttl(64)
-                                    .unwrap()
-                                    .source(ipv4_packet.destination())
-                                    .unwrap()
-                                    .destination(ipv4_packet.source())
-                                    .unwrap()
-                                    .icmp()
-                                    .unwrap()
-                                    .echo()
-                                    .unwrap()
-                                    .reply()
-                                    .unwrap()
-                                    .identifier(icmp_echo_packet.identifier())
-                                    .unwrap()
-                                    .sequence(icmp_echo_packet.sequence())
-                                    .unwrap()
-                                    .payload(icmp_echo_packet.payload())
-                                    .unwrap()
-                                    .build()
-                                    .unwrap();
+    async fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+        match packet::ip::Packet::new(packet.get_bytes()) {
+            Ok(packet::ip::Packet::V4(ipv4_packet)) => match packet::icmp::Packet::new(ipv4_packet.payload()) {
+                Ok(icmp_packet) => match icmp_packet.echo() {
+                    Ok(icmp_echo_packet) => Ok(SlotPacket::Data((ipv4_packet.to_owned(), icmp_echo_packet.to_owned()))),
+                    _ => Err(packet),
+                },
+                _ => Err(packet),
+            },
+            _ => Err(packet),
+        }
+    }
 
-                                exit_tx.send(TunPacket::new(reply)).await?;
-                                continue;
-                            },
-                            _ => {},
-                        },
-                        _ => {},
-                    },
-                    _ => {},
-                }
+    async fn handle_event(&self, _event: Self::Event) -> Vec<Self::Action> {
+        unreachable!()
+    }
 
-                tx.send(tun_packet).await?;
-            }
+    async fn serialize(&self, _action: Self::Action) -> tun::TunPacket {
+        unreachable!()
+    }
 
-            Ok(())
-        });
-
-        TunRackSlotHandle::new(handle)
+    async fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
+        TunRackSlotProcessResult {
+            forward: vec![],
+            exit: vec![tun::TunPacket::new(
+                packet::ip::v4::Builder::default()
+                    .id(0x42)
+                    .unwrap()
+                    .ttl(64)
+                    .unwrap()
+                    .source(data.0.destination())
+                    .unwrap()
+                    .destination(data.0.source())
+                    .unwrap()
+                    .icmp()
+                    .unwrap()
+                    .echo()
+                    .unwrap()
+                    .reply()
+                    .unwrap()
+                    .identifier(data.1.identifier())
+                    .unwrap()
+                    .sequence(data.1.sequence())
+                    .unwrap()
+                    .payload(data.1.payload())
+                    .unwrap()
+                    .build()
+                    .unwrap(),
+            )],
+        }
     }
 }

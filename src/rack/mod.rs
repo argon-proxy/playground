@@ -1,18 +1,16 @@
 use futures::{FutureExt, Stream};
 
 use self::{
-    slot::TunRackSlot,
-    slot_builder::TunRackSlotBuilder,
-    slot_handle::TunRackSlotHandle,
+    runner::TunRackSlotRunner,
+    slot::{TunRackSlot, TunRackSlotBuilder, TunRackSlotHandle},
     util::build_tunrack_channel,
 };
 use crate::error::TunRackError;
 
-pub mod runner;
 pub mod slot;
-pub mod slot_builder;
-pub mod slot_handle;
-pub mod util;
+
+mod runner;
+mod util;
 
 pub type TunRackSlotSender = tokio::sync::mpsc::Sender<tun::TunPacket>;
 pub type TunRackSlotReceiver = tokio::sync::mpsc::Receiver<tun::TunPacket>;
@@ -56,9 +54,11 @@ impl TunRack {
 
         std::mem::swap(&mut self.last_rx, &mut slot_rx);
 
-        let slot = slot_builder.build(slot_rx, slot_tx, self.exit_tx.clone());
+        let runner = TunRackSlotRunner {
+            slot: slot_builder.build(),
+        };
 
-        self.racks.push(slot.run());
+        self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone()));
     }
 
     pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), TunRackSendError> {

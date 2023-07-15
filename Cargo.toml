@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-trait = { version = "=0.1.67" }
 clap = { version = "=4.3.2", features = ["derive"] }
 futures = "=0.3.28"
 packet = "=0.1.4"
