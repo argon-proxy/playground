@@ -1,6 +1,4 @@
-use async_trait::async_trait;
-
-use crate::rack::slot::{SlotPacket, TunRackSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use crate::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 
 pub struct LogSlotBuilder {}
 
@@ -18,25 +16,24 @@ impl TunRackSlotBuilder<LogSlot> for LogSlotBuilder {
 
 pub struct LogSlot {}
 
-#[async_trait]
-impl TunRackSlot for LogSlot {
+impl TunRackSequentialSlot for LogSlot {
     type Event = ();
     type Data = tun::TunPacket;
     type Action = ();
 
-    async fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         Ok(SlotPacket::Data(packet))
     }
 
-    async fn handle_event(&self, _event: Self::Event) -> Vec<Self::Action> {
+    fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {
         unreachable!()
     }
 
-    async fn serialize(&self, _action: Self::Action) -> tun::TunPacket {
+    fn serialize(&self, _action: Self::Action) -> tun::TunPacket {
         unreachable!()
     }
 
-    async fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
+    fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
         println!("[logslot] {:?}", data);
 
         TunRackSlotProcessResult {

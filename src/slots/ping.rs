@@ -1,7 +1,6 @@
-use async_trait::async_trait;
 use packet::{Builder, Packet};
 
-use crate::rack::slot::{SlotPacket, TunRackSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use crate::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 
 pub struct PingSlotBuilder {}
 
@@ -19,13 +18,12 @@ impl TunRackSlotBuilder<PingSlot> for PingSlotBuilder {
 
 pub struct PingSlot {}
 
-#[async_trait]
-impl TunRackSlot for PingSlot {
+impl TunRackSequentialSlot for PingSlot {
     type Event = ();
     type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
     type Action = ();
 
-    async fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         match packet::ip::Packet::new(packet.get_bytes()) {
             Ok(packet::ip::Packet::V4(ipv4_packet)) => match packet::icmp::Packet::new(ipv4_packet.payload()) {
                 Ok(icmp_packet) => match icmp_packet.echo() {
@@ -38,15 +36,15 @@ impl TunRackSlot for PingSlot {
         }
     }
 
-    async fn handle_event(&self, _event: Self::Event) -> Vec<Self::Action> {
+    fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {
         unreachable!()
     }
 
-    async fn serialize(&self, _action: Self::Action) -> tun::TunPacket {
+    fn serialize(&self, _action: Self::Action) -> tun::TunPacket {
         unreachable!()
     }
 
-    async fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
+    fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
         TunRackSlotProcessResult {
             forward: vec![],
             exit: vec![tun::TunPacket::new(

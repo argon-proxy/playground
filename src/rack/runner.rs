@@ -1,24 +1,25 @@
-use super::{slot::SlotPacket, TunRack, TunRackSlot, TunRackSlotHandle, TunRackSlotReceiver, TunRackSlotSender};
+use super::{slot::SlotPacket, TunRackSequentialSlot, TunRackSlotHandle, TunRackSlotReceiver, TunRackSlotSender};
 
-pub trait TunRackSlotRunner<S: TunRackSlot> {
+pub trait TunRackSlotRunner<S> {
     fn new(slot: S) -> Self;
+
     fn run(self, rx: TunRackSlotReceiver, tx: TunRackSlotSender, exit_tx: TunRackSlotSender) -> TunRackSlotHandle;
 }
 
-pub struct SlotRunnerSequential<S: TunRackSlot> {
+pub struct TunRackSequentialSlotRunner<S: TunRackSequentialSlot> {
     pub slot: S,
 }
 
-impl<S: TunRackSlot> TunRackSlotRunner<S> for SlotRunnerSequential<S> {
-    fn new(slot: S) -> SlotRunnerSequential<S> {
+impl<S: TunRackSequentialSlot> TunRackSlotRunner<S> for TunRackSequentialSlotRunner<S> {
+    fn new(slot: S) -> TunRackSequentialSlotRunner<S> {
         Self { slot }
     }
     fn run(self, mut rx: TunRackSlotReceiver, tx: TunRackSlotSender, exit_tx: TunRackSlotSender) -> TunRackSlotHandle {
-        let slot = self.slot;
+        let mut slot = self.slot;
 
         let handle = tokio::spawn(async move {
             while let Some(tun_packet) = rx.recv().await {
-                let packet = match slot.deserialize(tun_packet).await {
+                let packet = match slot.deserialize(tun_packet) {
                     Ok(packet) => packet,
                     Err(tun_packet) => {
                         tx.send(tun_packet).await?;
@@ -28,14 +29,14 @@ impl<S: TunRackSlot> TunRackSlotRunner<S> for SlotRunnerSequential<S> {
 
                 match packet {
                     SlotPacket::Event(event) => {
-                        let actions = slot.handle_event(event).await;
+                        let actions = slot.handle_event(event);
 
                         for action in actions {
-                            exit_tx.send(slot.serialize(action).await).await?;
+                            exit_tx.send(slot.serialize(action)).await?;
                         }
                     },
                     SlotPacket::Data(data) => {
-                        let result = slot.process(data).await;
+                        let result = slot.process(data);
 
                         for forward in result.forward {
                             tx.send(forward).await?;

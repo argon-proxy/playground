@@ -13,13 +13,10 @@ mod error;
 use error::TunRackError;
 
 mod rack;
-use rack::{runner::SlotRunnerSequential, slot::TunRackSlotConfig, TunRack};
+use rack::{slot::TunRackSequentialSlotRunnerConfig, TunRack};
 
 mod slots;
-use slots::{
-    log::{LogSlot, LogSlotBuilder},
-    ping::{PingSlot, PingSlotBuilder},
-};
+use slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 
 fn main() {
     let cli = Cli::parse();
@@ -45,20 +42,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingSlotBuilder::default(), TunRackSlotConfig::<
-        PingSlot,
-        SlotRunnerSequential<PingSlot>,
-    > {
-        runner: Default::default(),
-        slot: Default::default(),
-    });
-    rack.add_slot(LogSlotBuilder::default(), TunRackSlotConfig::<
-        LogSlot,
-        SlotRunnerSequential<LogSlot>,
-    > {
-        runner: Default::default(),
-        slot: Default::default(),
-    });
+    rack.add_sequential_slot(PingSlotBuilder::default(), TunRackSequentialSlotRunnerConfig {});
+    rack.add_sequential_slot(LogSlotBuilder::default(), TunRackSequentialSlotRunnerConfig {});
 
     loop {
         tokio::select! {

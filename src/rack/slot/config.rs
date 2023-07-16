@@ -1,16 +1,20 @@
-use std::marker::PhantomData;
+use super::TunRackSequentialSlot;
+use crate::rack::runner::{TunRackSequentialSlotRunner, TunRackSlotRunner};
 
-use super::TunRackSlot;
-use crate::rack::TunRackSlotRunner;
-
-pub struct TunRackSlotConfig<S: TunRackSlot, R: TunRackSlotRunner<S>> {
-    pub runner: PhantomData<R>,
-    pub slot: PhantomData<S>,
+pub trait TunRackRunnerConfig<S, SR>
+where
+    SR: TunRackSlotRunner<S>,
+{
+    fn build(&mut self, slot: S) -> SR;
 }
 
-impl<S: TunRackSlot, R: TunRackSlotRunner<S>> TunRackSlotConfig<S, R> {
-    pub fn configure(&mut self, slot: S) -> R {
-        // here, do whatever config is necessary
-        R::new(slot)
+pub struct TunRackSequentialSlotRunnerConfig {}
+
+impl<S> TunRackRunnerConfig<S, TunRackSequentialSlotRunner<S>> for TunRackSequentialSlotRunnerConfig
+where
+    S: TunRackSequentialSlot,
+{
+    fn build(&mut self, slot: S) -> TunRackSequentialSlotRunner<S> {
+        TunRackSequentialSlotRunner { slot }
     }
 }
