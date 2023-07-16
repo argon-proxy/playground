@@ -1,6 +1,5 @@
+use argon::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 use packet::{Builder, Packet};
-
-use crate::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 
 pub struct PingSlotBuilder {}
 

@@ -1,22 +1,16 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use argon::{
+    error::TunRackError,
+    rack::{slot::TunRackSequentialSlotRunnerConfig, TunRack},
+    Tun,
+};
+use argon_slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
 mod cli;
 use cli::Cli;
-
-mod device;
-use device::Tun;
-
-mod error;
-use error::TunRackError;
-
-mod rack;
-use rack::{slot::TunRackSequentialSlotRunnerConfig, TunRack};
-
-mod slots;
-use slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 
 fn main() {
     let cli = Cli::parse();

@@ -1,4 +1,4 @@
-use crate::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use argon::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 
 pub struct LogSlotBuilder {}
 

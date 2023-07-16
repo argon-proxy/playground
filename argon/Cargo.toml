@@ -1,0 +1,13 @@
+[package]
+name = "argon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+packet = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tun = { workspace = true, features = ["async"] }

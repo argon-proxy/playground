@@ -1,0 +1,10 @@
+[package]
+name = "argon-slots"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon = { path = "../argon" }
+
+packet = { workspace = true }
+tun = { workspace = true }

@@ -1,0 +1,12 @@
+[package]
+name = "argon-tun"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon = { path = "../argon" }
+argon-slots = { path = "../argon-slots" }
+
+clap = { workspace = true, features = ["derive"] }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }

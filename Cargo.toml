@@ -1,14 +1,16 @@
-[package]
-name = "playground"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "argon",
+    "argon-slots",
+    "argon-tun",
+]
 
-[dependencies]
-async-trait = { version = "=0.1.67" }
-clap = { version = "=4.3.2", features = ["derive"] }
+[workspace.dependencies]
+async-trait = "=0.1.67"
+clap = "=4.3.2"
 futures = "=0.3.28"
 packet = "=0.1.4"
-thiserror = { version = "=1.0.38" }
-tokio = { version = "=1.29.1", features = ["rt-multi-thread"] }
-tokio-util = { version = "=0.6.10" }
-tun = { version = "=0.5.5", features = ["async"] }
+thiserror = "=1.0.38"
+tokio = "=1.29.1"
+tokio-util = "=0.6.10"
+tun = "=0.5.5"
