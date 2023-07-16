@@ -1,8 +1,8 @@
 use futures::{FutureExt, Stream};
 
 use self::{
-    runner::{TunRackSlotRunner, SlotRunnerSequential},
-    slot::{TunRackSlot, TunRackSlotBuilder, TunRackSlotHandle, TunRackSlotConfig},
+    runner::{SlotRunnerSequential, TunRackSlotRunner},
+    slot::{TunRackSlot, TunRackSlotBuilder, TunRackSlotConfig, TunRackSlotHandle},
     util::build_tunrack_channel,
 };
 use crate::error::TunRackError;
@@ -49,8 +49,7 @@ impl TunRack {
     where
         ST: TunRackSlot,
         SB: TunRackSlotBuilder<ST>,
-        SR: TunRackSlotRunner<ST>
-        
+        SR: TunRackSlotRunner<ST>,
     {
         let (slot_tx, mut slot_rx) = build_tunrack_channel(self.channel_size);
 

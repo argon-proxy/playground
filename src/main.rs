@@ -13,11 +13,13 @@ mod error;
 use error::TunRackError;
 
 mod rack;
-use rack::{TunRack, runner::SlotRunnerSequential};
-use rack::slot::TunRackSlotConfig;
+use rack::{runner::SlotRunnerSequential, slot::TunRackSlotConfig, TunRack};
 
 mod slots;
-use slots::{log::LogSlot, log::LogSlotBuilder, ping::PingSlot, ping::PingSlotBuilder};
+use slots::{
+    log::{LogSlot, LogSlotBuilder},
+    ping::{PingSlot, PingSlotBuilder},
+};
 
 fn main() {
     let cli = Cli::parse();
@@ -43,8 +45,20 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingSlotBuilder::default(), TunRackSlotConfig::<PingSlot, SlotRunnerSequential<PingSlot>>{runner: Default::default(), slot: Default::default()});
-    rack.add_slot(LogSlotBuilder::default(), TunRackSlotConfig::<LogSlot, SlotRunnerSequential<LogSlot>>{runner: Default::default(), slot: Default::default()});
+    rack.add_slot(PingSlotBuilder::default(), TunRackSlotConfig::<
+        PingSlot,
+        SlotRunnerSequential<PingSlot>,
+    > {
+        runner: Default::default(),
+        slot: Default::default(),
+    });
+    rack.add_slot(LogSlotBuilder::default(), TunRackSlotConfig::<
+        LogSlot,
+        SlotRunnerSequential<LogSlot>,
+    > {
+        runner: Default::default(),
+        slot: Default::default(),
+    });
 
     loop {
         tokio::select! {
