@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 mod builder;
 pub use builder::TunRackSlotBuilder;
@@ -11,7 +12,6 @@ pub use event::SlotPacket;
 
 mod handle;
 pub use handle::TunRackSlotHandle;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub struct TunRackSlotProcessResult {
     pub forward: Vec<tun::TunPacket>,

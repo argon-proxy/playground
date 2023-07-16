@@ -1,4 +1,4 @@
-use argon::rack::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use argon::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
 use packet::{Builder, Packet};
 
 pub struct PingSlotBuilder {}

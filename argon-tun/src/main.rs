@@ -1,10 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use argon::{
-    error::TunRackError,
-    rack::{slot::TunRackSequentialSlotRunnerConfig, TunRack},
-    Tun,
-};
+use argon::{error::TunRackError, rack::TunRack, slot::TunRackSequentialSlotRunnerConfig, Tun};
 use argon_slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};

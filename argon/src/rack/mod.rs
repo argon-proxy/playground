@@ -1,18 +1,18 @@
 use futures::{FutureExt, Stream};
 
-use crate::error::TunRackError;
+use crate::{
+    error::TunRackError,
+    slot::{
+        TunRackRunnerConfig,
+        TunRackSequentialSlot,
+        TunRackSequentialSlotRunnerConfig,
+        TunRackSlotBuilder,
+        TunRackSlotHandle,
+    },
+};
 
 pub mod runner;
 use runner::TunRackSlotRunner;
-
-pub mod slot;
-use slot::{
-    TunRackRunnerConfig,
-    TunRackSequentialSlot,
-    TunRackSequentialSlotRunnerConfig,
-    TunRackSlotBuilder,
-    TunRackSlotHandle,
-};
 
 mod util;
 use util::build_tunrack_channel;
