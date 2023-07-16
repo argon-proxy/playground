@@ -3,6 +3,9 @@ use async_trait::async_trait;
 mod builder;
 pub use builder::TunRackSlotBuilder;
 
+mod config;
+pub use config::TunRackSlotConfig;
+
 mod event;
 pub use event::SlotPacket;
 

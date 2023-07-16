@@ -1,11 +1,29 @@
-use super::{slot::SlotPacket, TunRackSlot, TunRackSlotHandle, TunRackSlotReceiver, TunRackSlotSender};
+use super::{slot::SlotPacket, TunRackSlot, TunRackSlotHandle, TunRackSlotReceiver, TunRackSlotSender, TunRack};
 
-pub struct TunRackSlotRunner<S: TunRackSlot> {
+
+pub trait TunRackSlotRunner<S: TunRackSlot> {
+    fn new(
+        slot: S
+    ) -> Self;
+    fn run(
+        self,
+        rx: TunRackSlotReceiver,
+        tx: TunRackSlotSender,
+        exit_tx: TunRackSlotSender,
+    ) -> TunRackSlotHandle;
+}
+
+
+
+pub struct SlotRunnerSequential<S: TunRackSlot> {
     pub slot: S,
 }
 
-impl<S: TunRackSlot> TunRackSlotRunner<S> {
-    pub fn run(
+impl <S: TunRackSlot> TunRackSlotRunner<S> for SlotRunnerSequential<S> {
+    fn new(slot: S) -> SlotRunnerSequential<S>{
+        Self { slot }
+    }
+    fn run(
         self,
         mut rx: TunRackSlotReceiver,
         tx: TunRackSlotSender,
