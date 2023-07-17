@@ -1,8 +1,8 @@
-use super::TunRackSequentialSlot;
+use super::SequentialSlot;
 
-pub trait TunRackSlotBuilder<ST>: Default
+pub trait SlotBuilder<ST>: Default
 where
-    ST: TunRackSequentialSlot,
+    ST: SequentialSlot,
 {
     fn build(self) -> ST;
 }

@@ -1,4 +1,4 @@
-use argon::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use argon::slot::{SequentialSlot, SlotBuilder, SlotPacket, SlotProcessResult};
 use packet::{Builder, Packet};
 
 pub struct PingSlotBuilder {}
@@ -9,7 +9,7 @@ impl Default for PingSlotBuilder {
     }
 }
 
-impl TunRackSlotBuilder<PingSlot> for PingSlotBuilder {
+impl SlotBuilder<PingSlot> for PingSlotBuilder {
     fn build(self) -> PingSlot {
         PingSlot {}
     }
@@ -17,7 +17,7 @@ impl TunRackSlotBuilder<PingSlot> for PingSlotBuilder {
 
 pub struct PingSlot {}
 
-impl TunRackSequentialSlot for PingSlot {
+impl SequentialSlot for PingSlot {
     type Event = ();
     type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
     type Action = ();
@@ -43,8 +43,8 @@ impl TunRackSequentialSlot for PingSlot {
         unreachable!()
     }
 
-    fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
-        TunRackSlotProcessResult {
+    fn process(&self, data: Self::Data) -> SlotProcessResult {
+        SlotProcessResult {
             forward: vec![],
             exit: vec![tun::TunPacket::new(
                 packet::ip::v4::Builder::default()

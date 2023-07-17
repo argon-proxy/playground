@@ -1,20 +1,20 @@
-use super::TunRackSequentialSlot;
-use crate::runner::{TunRackSequentialSlotRunner, TunRackSlotRunner};
+use super::SequentialSlot;
+use crate::runner::{SequentialSlotRunner, SlotRunner};
 
-pub trait TunRackRunnerConfig<S, SR>
+pub trait SlotRunnerConfig<S, SR>
 where
-    SR: TunRackSlotRunner<S>,
+    SR: SlotRunner<S>,
 {
     fn build(&mut self, slot: S) -> SR;
 }
 
-pub struct TunRackSequentialSlotRunnerConfig {}
+pub struct SequentialSlotRunnerConfig {}
 
-impl<S> TunRackRunnerConfig<S, TunRackSequentialSlotRunner<S>> for TunRackSequentialSlotRunnerConfig
+impl<S> SlotRunnerConfig<S, SequentialSlotRunner<S>> for SequentialSlotRunnerConfig
 where
-    S: TunRackSequentialSlot,
+    S: SequentialSlot,
 {
-    fn build(&mut self, slot: S) -> TunRackSequentialSlotRunner<S> {
-        TunRackSequentialSlotRunner { slot }
+    fn build(&mut self, slot: S) -> SequentialSlotRunner<S> {
+        SequentialSlotRunner { slot }
     }
 }

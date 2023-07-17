@@ -1,23 +1,23 @@
 use thiserror::Error;
 
-use crate::rack::TunRackSendError;
+use crate::rack::SlotSendError;
 
 #[derive(Error, Debug)]
 pub enum TunRackError {
     #[error("TunError({0})")]
     TunError(#[from] tun::Error),
 
-    #[error("TunIoError({0})")]
-    TunIoError(std::io::Error),
+    #[error("IoError({0})")]
+    IoError(std::io::Error),
 
-    #[error("TunRackSendError({0})")]
-    TunRackSendError(#[from] TunRackSendError),
+    #[error("SlotSendError({0})")]
+    SlotSendError(#[from] SlotSendError),
 
-    #[error("TunRackSlotCrash")]
-    TunRackSlotCrash,
+    #[error("SlotCrash")]
+    SlotCrash,
 
-    #[error("TunRackChannelClosed")]
-    TunRackChannelClosed,
+    #[error("SlotChannelClosed")]
+    SlotChannelClosed,
 
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),

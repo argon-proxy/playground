@@ -2,36 +2,29 @@ use futures::{FutureExt, Stream};
 
 use crate::{
     error::TunRackError,
-    runner::TunRackSlotRunner,
-    slot::{
-        TunRackRunnerConfig,
-        TunRackSequentialSlot,
-        TunRackSequentialSlotRunnerConfig,
-        TunRackSlotBuilder,
-        TunRackSlotHandle,
-    },
+    runner::SlotRunner,
+    slot::{SequentialSlot, SlotBuilder, SlotHandle, SlotRunnerConfig},
 };
+
+mod types;
+pub use types::*;
 
 mod util;
 use util::build_tunrack_channel;
 
-pub type TunRackSlotSender = tokio::sync::mpsc::Sender<tun::TunPacket>;
-pub type TunRackSlotReceiver = tokio::sync::mpsc::Receiver<tun::TunPacket>;
-pub type TunRackSendError = tokio::sync::mpsc::error::SendError<tun::TunPacket>;
-
 pub struct TunRack {
-    racks: Vec<TunRackSlotHandle>,
+    racks: Vec<SlotHandle>,
 
     channel_size: usize,
 
-    first_tx: TunRackSlotSender,
-    last_rx: TunRackSlotReceiver,
+    first_tx: SlotSender,
+    last_rx: SlotReceiver,
 
-    exit_tx: TunRackSlotSender,
+    exit_tx: SlotSender,
 }
 
 impl TunRack {
-    pub fn new(channel_size: usize) -> (Self, TunRackSlotReceiver) {
+    pub fn new(channel_size: usize) -> (Self, SlotReceiver) {
         let (first_tx, last_rx) = build_tunrack_channel(channel_size);
         let (exit_tx, exit_rx) = build_tunrack_channel(channel_size);
 
@@ -48,13 +41,12 @@ impl TunRack {
         )
     }
 
-    pub fn add_sequential_slot<ST, SB>(
-        &mut self,
-        slot_builder: SB,
-        mut runner_config: TunRackSequentialSlotRunnerConfig,
-    ) where
-        ST: TunRackSequentialSlot,
-        SB: TunRackSlotBuilder<ST>,
+    pub fn add_slot<S, SB, SR, SRC>(&mut self, slot_builder: SB, mut runner_config: SRC)
+    where
+        S: SequentialSlot,
+        SB: SlotBuilder<S>,
+        SR: SlotRunner<S>,
+        SRC: SlotRunnerConfig<S, SR>,
     {
         let (slot_tx, mut slot_rx) = build_tunrack_channel(self.channel_size);
 
@@ -65,7 +57,7 @@ impl TunRack {
         self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone()));
     }
 
-    pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), TunRackSendError> {
+    pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), SlotSendError> {
         self.first_tx.send(packet).await
     }
 }
@@ -80,14 +72,14 @@ impl Stream for TunRack {
         for slot in &mut self.racks {
             if let std::task::Poll::Ready(result) = slot.handle.poll_unpin(cx) {
                 return std::task::Poll::Ready(Some(Err(match result {
-                    Ok(item) => item.err().unwrap_or(TunRackError::TunRackSlotCrash),
+                    Ok(item) => item.err().unwrap_or(TunRackError::SlotCrash),
                     Err(e) => TunRackError::TokioJoinError(e),
                 })));
             }
         }
 
         if let std::task::Poll::Ready(result) = self.last_rx.poll_recv(cx) {
-            std::task::Poll::Ready(Some(result.ok_or(TunRackError::TunRackSlotCrash)))
+            std::task::Poll::Ready(Some(result.ok_or(TunRackError::SlotCrash)))
         } else {
             std::task::Poll::Pending
         }

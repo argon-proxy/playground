@@ -1,4 +1,4 @@
-use argon::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotBuilder, TunRackSlotProcessResult};
+use argon::slot::{SequentialSlot, SlotBuilder, SlotPacket, SlotProcessResult};
 
 pub struct LogSlotBuilder {}
 
@@ -8,7 +8,7 @@ impl Default for LogSlotBuilder {
     }
 }
 
-impl TunRackSlotBuilder<LogSlot> for LogSlotBuilder {
+impl SlotBuilder<LogSlot> for LogSlotBuilder {
     fn build(self) -> LogSlot {
         LogSlot {}
     }
@@ -16,7 +16,7 @@ impl TunRackSlotBuilder<LogSlot> for LogSlotBuilder {
 
 pub struct LogSlot {}
 
-impl TunRackSequentialSlot for LogSlot {
+impl SequentialSlot for LogSlot {
     type Event = ();
     type Data = tun::TunPacket;
     type Action = ();
@@ -33,10 +33,10 @@ impl TunRackSequentialSlot for LogSlot {
         unreachable!()
     }
 
-    fn process(&self, data: Self::Data) -> TunRackSlotProcessResult {
+    fn process(&self, data: Self::Data) -> SlotProcessResult {
         println!("[logslot] {:?}", data);
 
-        TunRackSlotProcessResult {
+        SlotProcessResult {
             forward: vec![data],
             exit: vec![],
         }

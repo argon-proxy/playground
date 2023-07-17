@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use argon::{error::TunRackError, rack::TunRack, slot::TunRackSequentialSlotRunnerConfig, Tun};
+use argon::{error::TunRackError, rack::TunRack, slot::SequentialSlotRunnerConfig, Tun};
 use argon_slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
@@ -32,22 +32,22 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_sequential_slot(PingSlotBuilder::default(), TunRackSequentialSlotRunnerConfig {});
-    rack.add_sequential_slot(LogSlotBuilder::default(), TunRackSequentialSlotRunnerConfig {});
+    rack.add_slot(PingSlotBuilder::default(), SequentialSlotRunnerConfig {});
+    rack.add_slot(LogSlotBuilder::default(), SequentialSlotRunnerConfig {});
 
     loop {
         tokio::select! {
             Some(result) = tun.next() => {
-                let packet = result.map_err(TunRackError::TunIoError)?;
+                let packet = result.map_err(TunRackError::IoError)?;
 
                 rack.send(packet).await?;
             }
 
             option = rack_exit_rx.recv() => {
                 if let Some(tun_packet) = option {
-                    tun.send(tun_packet).await.map_err(TunRackError::TunIoError)?;
+                    tun.send(tun_packet).await.map_err(TunRackError::IoError)?;
                 } else {
-                    return Err(TunRackError::TunRackChannelClosed);
+                    return Err(TunRackError::SlotChannelClosed);
                 }
             }
 
