@@ -2,7 +2,7 @@
 members = [
     "argon",
     "argon-slots",
-    "argon-tun",
+    "argon-driver",
 ]
 
 [workspace.dependencies]
