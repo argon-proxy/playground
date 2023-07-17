@@ -37,8 +37,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingParallelSlotBuilder::default(), ParallelSlotRunnerConfig {});
-    rack.add_slot(LogSlotBuilder::default(), SequentialSlotRunnerConfig {});
+    rack.add_slot(PingParallelSlotBuilder::default(), ParallelSlotRunnerConfig::default());
+    rack.add_slot(LogSlotBuilder::default(), SequentialSlotRunnerConfig::default());
 
     loop {
         tokio::select! {

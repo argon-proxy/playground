@@ -73,6 +73,7 @@ dependencies = [
  "async-channel",
  "async-trait",
  "futures",
+ "num_cpus",
  "packet",
  "thiserror",
  "tokio",

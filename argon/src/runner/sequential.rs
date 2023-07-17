@@ -6,6 +6,12 @@ use crate::{
 
 pub struct SequentialSlotRunnerConfig {}
 
+impl Default for SequentialSlotRunnerConfig {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 impl<S> SlotRunnerConfig<S, SequentialSlotRunner<S>> for SequentialSlotRunnerConfig
 where
     S: SequentialSlot,
@@ -20,10 +26,6 @@ pub struct SequentialSlotRunner<S: SequentialSlot> {
 }
 
 impl<S: SequentialSlot> SlotRunner<S> for SequentialSlotRunner<S> {
-    fn new(slot: S) -> SequentialSlotRunner<S> {
-        Self { slot }
-    }
-
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let mut slot = self.slot;
 

@@ -10,14 +10,35 @@ use crate::{
     slot::{ParallelSlot, SlotPacket},
 };
 
-pub struct ParallelSlotRunnerConfig {}
+type WorkerTx<S> = async_channel::Sender<<S as ParallelSlot>::Data>;
+type WorkerRx<S> = async_channel::Receiver<<S as ParallelSlot>::Data>;
+
+const WORKER_DEFAULT_CHANNEL_SIZE: usize = 2048;
+
+pub struct ParallelSlotRunnerConfig {
+    pub workers: usize,
+    pub worker_channel_size: usize,
+}
+
+impl Default for ParallelSlotRunnerConfig {
+    fn default() -> Self {
+        Self {
+            workers: num_cpus::get(),
+            worker_channel_size: WORKER_DEFAULT_CHANNEL_SIZE,
+        }
+    }
+}
 
 impl<S> SlotRunnerConfig<S, ParallelSlotRunner<S>> for ParallelSlotRunnerConfig
 where
     S: ParallelSlot,
 {
     fn build(&mut self, slot: S) -> ParallelSlotRunner<S> {
-        ParallelSlotRunner::new(slot)
+        let (worker_tx, worker_rx) = async_channel::bounded(self.worker_channel_size);
+
+        let worker_rxs = (0..self.workers).map(|_| worker_rx.clone()).collect::<Vec<_>>();
+
+        ParallelSlotRunner::new(slot, worker_tx, worker_rxs)
     }
 }
 
@@ -27,31 +48,39 @@ pub struct ParallelSlotContainer<S: ParallelSlot> {
 
 pub struct ParallelSlotRunner<S: ParallelSlot> {
     pub container: ParallelSlotContainer<S>,
+    pub worker_tx: WorkerTx<S>,
+    pub worker_rxs: Vec<WorkerRx<S>>,
 }
 
-impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
-    fn new(slot: S) -> Self {
+impl<S> ParallelSlotRunner<S>
+where
+    S: ParallelSlot,
+{
+    pub fn new(slot: S, worker_tx: WorkerTx<S>, worker_rxs: Vec<WorkerRx<S>>) -> Self {
         Self {
             container: ParallelSlotContainer {
                 slot: Arc::new(RwLock::new(slot)),
             },
+            worker_tx,
+            worker_rxs,
         }
     }
+}
 
+impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let slot = self.container.slot;
+        let worker_tx = self.worker_tx;
+        let worker_rxs = self.worker_rxs;
 
         let handle = tokio::spawn(async move {
-            let (worker_tx, worker_rx) = async_channel::bounded::<<S as ParallelSlot>::Data>(1024);
-
             let mut workers: FuturesUnordered<tokio::task::JoinHandle<Result<(), TunRackError>>> =
                 FuturesUnordered::new();
 
-            for _ in 0..8 {
+            for worker_rx in worker_rxs {
                 let slot = slot.clone();
                 let tx = tx.clone();
                 let exit_tx = exit_tx.clone();
-                let worker_rx = worker_rx.clone();
 
                 workers.push(tokio::spawn(async move {
                     loop {
@@ -71,8 +100,6 @@ impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
                     }
                 }));
             }
-
-            drop(worker_rx);
 
             loop {
                 tokio::select! {

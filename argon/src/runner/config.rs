@@ -1,6 +1,6 @@
 use crate::runner::SlotRunner;
 
-pub trait SlotRunnerConfig<S, SR>
+pub trait SlotRunnerConfig<S, SR>: Default
 where
     SR: SlotRunner<S>,
 {
