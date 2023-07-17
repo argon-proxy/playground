@@ -3,6 +3,9 @@ use crate::{
     slot::SlotHandle,
 };
 
+mod config;
+pub use config::SlotRunnerConfig;
+
 mod parallel;
 pub use parallel::*;
 

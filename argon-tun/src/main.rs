@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use argon::{
     error::TunRackError,
     rack::TunRack,
-    slot::{ParallelSlotRunnerConfig, SequentialSlotRunnerConfig},
+    runner::{ParallelSlotRunnerConfig, SequentialSlotRunnerConfig},
     Tun,
 };
 use argon_slots::{log::LogSlotBuilder, ping::PingParallelSlotBuilder};

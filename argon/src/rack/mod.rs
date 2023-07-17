@@ -2,8 +2,8 @@ use futures::{FutureExt, Stream};
 
 use crate::{
     error::TunRackError,
-    runner::SlotRunner,
-    slot::{SlotBuilder, SlotHandle, SlotRunnerConfig},
+    runner::{SlotRunner, SlotRunnerConfig},
+    slot::{SlotBuilder, SlotHandle},
 };
 
 mod types;

@@ -1,8 +1,19 @@
-use super::SlotRunner;
+use super::{SlotRunner, SlotRunnerConfig};
 use crate::{
     rack::{SlotReceiver, SlotSender},
     slot::{SequentialSlot, SlotHandle, SlotPacket},
 };
+
+pub struct SequentialSlotRunnerConfig {}
+
+impl<S> SlotRunnerConfig<S, SequentialSlotRunner<S>> for SequentialSlotRunnerConfig
+where
+    S: SequentialSlot,
+{
+    fn build(&mut self, slot: S) -> SequentialSlotRunner<S> {
+        SequentialSlotRunner { slot }
+    }
+}
 
 pub struct SequentialSlotRunner<S: SequentialSlot> {
     pub slot: S,

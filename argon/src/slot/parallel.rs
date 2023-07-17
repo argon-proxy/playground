@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-use super::{SlotPacket, SlotProcessResult, SlotRunnerConfig};
-use crate::runner::{ParallelSlotRunner, SlotRunner};
+use super::{SlotPacket, SlotProcessResult};
 
 #[async_trait]
 pub trait ParallelSlot: Send + Sync + 'static {
@@ -20,15 +19,4 @@ pub trait ParallelSlot: Send + Sync + 'static {
     async fn serialize<'p>(slot: &RwLockReadGuard<'p, Self>, action: Self::Action) -> tun::TunPacket;
 
     async fn process<'p>(slot: &RwLockReadGuard<'p, Self>, data: Self::Data) -> SlotProcessResult;
-}
-
-pub struct ParallelSlotRunnerConfig {}
-
-impl<S> SlotRunnerConfig<S, ParallelSlotRunner<S>> for ParallelSlotRunnerConfig
-where
-    S: ParallelSlot,
-{
-    fn build(&mut self, slot: S) -> ParallelSlotRunner<S> {
-        ParallelSlotRunner::new(slot)
-    }
 }

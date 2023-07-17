@@ -1,9 +1,6 @@
 mod builder;
 pub use builder::SlotBuilder;
 
-mod config;
-pub use config::SlotRunnerConfig;
-
 mod event;
 pub use event::SlotPacket;
 
@@ -14,7 +11,7 @@ mod process;
 pub use process::SlotProcessResult;
 
 mod sequential;
-pub use sequential::{SequentialSlot, SequentialSlotRunnerConfig};
+pub use sequential::SequentialSlot;
 
 mod parallel;
-pub use parallel::{ParallelSlot, ParallelSlotRunnerConfig};
+pub use parallel::ParallelSlot;

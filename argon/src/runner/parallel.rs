@@ -3,11 +3,22 @@ use std::sync::Arc;
 use futures::{stream::FuturesUnordered, StreamExt};
 use tokio::sync::RwLock;
 
-use super::SlotRunner;
+use super::{SlotRunner, SlotRunnerConfig};
 use crate::{
     error::TunRackError,
     slot::{ParallelSlot, SlotHandle, SlotPacket},
 };
+
+pub struct ParallelSlotRunnerConfig {}
+
+impl<S> SlotRunnerConfig<S, ParallelSlotRunner<S>> for ParallelSlotRunnerConfig
+where
+    S: ParallelSlot,
+{
+    fn build(&mut self, slot: S) -> ParallelSlotRunner<S> {
+        ParallelSlotRunner::new(slot)
+    }
+}
 
 pub struct ParallelSlotContainer<S: ParallelSlot> {
     pub slot: Arc<RwLock<S>>,

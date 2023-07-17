@@ -1,5 +1,4 @@
-use super::{SlotPacket, SlotProcessResult, SlotRunnerConfig};
-use crate::runner::SequentialSlotRunner;
+use super::{SlotPacket, SlotProcessResult};
 
 pub trait SequentialSlot: Send + Sync + 'static {
     type Event: Send + Sync;
@@ -13,15 +12,4 @@ pub trait SequentialSlot: Send + Sync + 'static {
     fn serialize(&self, action: Self::Action) -> tun::TunPacket;
 
     fn process(&self, data: Self::Data) -> SlotProcessResult;
-}
-
-pub struct SequentialSlotRunnerConfig {}
-
-impl<S> SlotRunnerConfig<S, SequentialSlotRunner<S>> for SequentialSlotRunnerConfig
-where
-    S: SequentialSlot,
-{
-    fn build(&mut self, slot: S) -> SequentialSlotRunner<S> {
-        SequentialSlotRunner { slot }
-    }
 }
