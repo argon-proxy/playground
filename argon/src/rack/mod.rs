@@ -2,6 +2,7 @@ use futures::{FutureExt, Stream};
 
 use crate::{
     error::TunRackError,
+    runner::TunRackSlotRunner,
     slot::{
         TunRackRunnerConfig,
         TunRackSequentialSlot,
@@ -10,9 +11,6 @@ use crate::{
         TunRackSlotHandle,
     },
 };
-
-pub mod runner;
-use runner::TunRackSlotRunner;
 
 mod util;
 use util::build_tunrack_channel;

@@ -1,5 +1,5 @@
 use super::TunRackSequentialSlot;
-use crate::rack::runner::{TunRackSequentialSlotRunner, TunRackSlotRunner};
+use crate::runner::{TunRackSequentialSlotRunner, TunRackSlotRunner};
 
 pub trait TunRackRunnerConfig<S, SR>
 where

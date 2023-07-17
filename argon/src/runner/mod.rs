@@ -1,5 +1,7 @@
-use super::{TunRackSlotReceiver, TunRackSlotSender};
-use crate::slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotHandle};
+use crate::{
+    rack::{TunRackSlotReceiver, TunRackSlotSender},
+    slot::{SlotPacket, TunRackSequentialSlot, TunRackSlotHandle},
+};
 
 pub trait TunRackSlotRunner<S> {
     fn new(slot: S) -> Self;
