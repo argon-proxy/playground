@@ -21,4 +21,10 @@ pub enum TunRackError {
 
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),
+
+    #[error("SlotAsyncChannelSendError")]
+    SlotAsyncChannelSendError,
+
+    #[error("SlotAsyncChannelRecvError({0})")]
+    SlotAsyncChannelRecvError(#[from] async_channel::RecvError),
 }

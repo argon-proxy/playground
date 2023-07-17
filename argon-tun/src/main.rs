@@ -1,7 +1,12 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use argon::{error::TunRackError, rack::TunRack, slot::SequentialSlotRunnerConfig, Tun};
-use argon_slots::{log::LogSlotBuilder, ping::PingSlotBuilder};
+use argon::{
+    error::TunRackError,
+    rack::TunRack,
+    slot::{ParallelSlotRunnerConfig, SequentialSlotRunnerConfig},
+    Tun,
+};
+use argon_slots::{log::LogSlotBuilder, ping::PingParallelSlotBuilder};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
@@ -32,7 +37,7 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingSlotBuilder::default(), SequentialSlotRunnerConfig {});
+    rack.add_slot(PingParallelSlotBuilder::default(), ParallelSlotRunnerConfig {});
     rack.add_slot(LogSlotBuilder::default(), SequentialSlotRunnerConfig {});
 
     loop {
@@ -51,7 +56,13 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
                 }
             }
 
-            Some(result) = rack.next() => {
+            result = rack.next() => {
+                let result = if let Some(packet) = result {
+                    packet
+                } else {
+                    return Err(TunRackError::SlotChannelClosed);
+                };
+
                 // Consume any packet that goes through the tun_rack and does not get forwarded through the exit_tx
                 drop(result?);
             }

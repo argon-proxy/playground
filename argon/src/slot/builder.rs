@@ -1,8 +1,3 @@
-use super::SequentialSlot;
-
-pub trait SlotBuilder<ST>: Default
-where
-    ST: SequentialSlot,
-{
+pub trait SlotBuilder<ST>: Default {
     fn build(self) -> ST;
 }

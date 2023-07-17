@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 argon = { path = "../argon" }
 
+async-trait = { workspace = true }
 packet = { workspace = true }
+tokio = { workspace = true }
 tun = { workspace = true }

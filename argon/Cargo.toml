@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-channel = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 packet = { workspace = true }
