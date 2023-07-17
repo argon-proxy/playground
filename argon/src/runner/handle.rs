@@ -2,6 +2,6 @@ use tokio::task::JoinHandle;
 
 use crate::error::TunRackError;
 
-pub struct SlotHandle {
+pub struct SlotRunnerHandle {
     pub handle: JoinHandle<Result<(), TunRackError>>,
 }

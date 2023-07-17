@@ -3,10 +3,11 @@ use std::sync::Arc;
 use futures::{stream::FuturesUnordered, StreamExt};
 use tokio::sync::RwLock;
 
-use super::{SlotRunner, SlotRunnerConfig};
+use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
 use crate::{
     error::TunRackError,
-    slot::{ParallelSlot, SlotHandle, SlotPacket},
+    rack::{SlotReceiver, SlotSender},
+    slot::{ParallelSlot, SlotPacket},
 };
 
 pub struct ParallelSlotRunnerConfig {}
@@ -37,12 +38,7 @@ impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
         }
     }
 
-    fn run(
-        self,
-        mut rx: crate::rack::SlotReceiver,
-        tx: crate::rack::SlotSender,
-        exit_tx: crate::rack::SlotSender,
-    ) -> crate::slot::SlotHandle {
+    fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let slot = self.container.slot;
 
         let handle = tokio::spawn(async move {
@@ -120,6 +116,6 @@ impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
             }
         });
 
-        SlotHandle { handle }
+        SlotRunnerHandle { handle }
     }
 }

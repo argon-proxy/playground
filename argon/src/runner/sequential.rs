@@ -1,7 +1,7 @@
-use super::{SlotRunner, SlotRunnerConfig};
+use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
 use crate::{
     rack::{SlotReceiver, SlotSender},
-    slot::{SequentialSlot, SlotHandle, SlotPacket},
+    slot::{SequentialSlot, SlotPacket},
 };
 
 pub struct SequentialSlotRunnerConfig {}
@@ -24,7 +24,7 @@ impl<S: SequentialSlot> SlotRunner<S> for SequentialSlotRunner<S> {
         Self { slot }
     }
 
-    fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotHandle {
+    fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let mut slot = self.slot;
 
         let handle = tokio::spawn(async move {
@@ -62,6 +62,6 @@ impl<S: SequentialSlot> SlotRunner<S> for SequentialSlotRunner<S> {
             Ok(())
         });
 
-        SlotHandle { handle }
+        SlotRunnerHandle { handle }
     }
 }

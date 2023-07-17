@@ -2,8 +2,8 @@ use futures::{FutureExt, Stream};
 
 use crate::{
     error::TunRackError,
-    runner::{SlotRunner, SlotRunnerConfig},
-    slot::{SlotBuilder, SlotHandle},
+    runner::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle},
+    slot::SlotBuilder,
 };
 
 mod types;
@@ -13,7 +13,7 @@ mod util;
 use util::build_tunrack_channel;
 
 pub struct TunRack {
-    racks: Vec<SlotHandle>,
+    racks: Vec<SlotRunnerHandle>,
 
     channel_size: usize,
 

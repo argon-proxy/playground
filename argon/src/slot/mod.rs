@@ -4,9 +4,6 @@ pub use builder::SlotBuilder;
 mod event;
 pub use event::SlotPacket;
 
-mod handle;
-pub use handle::SlotHandle;
-
 mod process;
 pub use process::SlotProcessResult;
 
