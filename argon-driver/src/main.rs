@@ -6,7 +6,7 @@ use argon::{
     runner::{AsyncSlotRunnerConfig, SlotRunnerError, SyncSlotRunnerConfig},
     Tun,
 };
-use argon_slots::{log::LogSlotBuilder, ping::PingParallelSlotBuilder};
+use argon_slots::{log::LogSlotBuilder, ping::PingAsyncSlotBuilder};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
@@ -37,7 +37,7 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingParallelSlotBuilder::default(), AsyncSlotRunnerConfig::default())?;
+    rack.add_slot(PingAsyncSlotBuilder::default(), AsyncSlotRunnerConfig::default())?;
     rack.add_slot(LogSlotBuilder::default(), SyncSlotRunnerConfig::default())?;
 
     loop {

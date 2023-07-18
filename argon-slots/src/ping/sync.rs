@@ -1,23 +1,23 @@
 use argon::slot::{SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
 use packet::{Builder, Packet};
 
-pub struct PingSequentialSlotBuilder {}
+pub struct PingSyncSlotBuilder {}
 
-impl Default for PingSequentialSlotBuilder {
+impl Default for PingSyncSlotBuilder {
     fn default() -> Self {
         Self {}
     }
 }
 
-impl SlotBuilder<PingSequentialSlot> for PingSequentialSlotBuilder {
-    fn build(self) -> PingSequentialSlot {
-        PingSequentialSlot {}
+impl SlotBuilder<PingSyncSlot> for PingSyncSlotBuilder {
+    fn build(self) -> PingSyncSlot {
+        PingSyncSlot {}
     }
 }
 
-pub struct PingSequentialSlot {}
+pub struct PingSyncSlot {}
 
-impl SyncSlot for PingSequentialSlot {
+impl SyncSlot for PingSyncSlot {
     type Event = ();
     type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
     type Action = ();

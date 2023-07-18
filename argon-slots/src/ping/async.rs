@@ -2,30 +2,28 @@ use argon::slot::{AsyncSlot, SlotBuilder, SlotPacket, SlotProcessResult, SyncSlo
 use async_trait::async_trait;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-use super::PingSequentialSlot;
+use super::PingSyncSlot;
 
-pub struct PingParallelSlotBuilder {}
+pub struct PingAsyncSlotBuilder {}
 
-impl Default for PingParallelSlotBuilder {
+impl Default for PingAsyncSlotBuilder {
     fn default() -> Self {
         Self {}
     }
 }
 
-impl SlotBuilder<PingParallelSlot> for PingParallelSlotBuilder {
-    fn build(self) -> PingParallelSlot {
-        PingParallelSlot {
-            sequential: PingSequentialSlot {},
-        }
+impl SlotBuilder<PingAsyncSlot> for PingAsyncSlotBuilder {
+    fn build(self) -> PingAsyncSlot {
+        PingAsyncSlot { sync: PingSyncSlot {} }
     }
 }
 
-pub struct PingParallelSlot {
-    sequential: PingSequentialSlot,
+pub struct PingAsyncSlot {
+    sync: PingSyncSlot,
 }
 
 #[async_trait]
-impl AsyncSlot for PingParallelSlot {
+impl AsyncSlot for PingAsyncSlot {
     type Event = ();
     type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
     type Action = ();
@@ -34,18 +32,18 @@ impl AsyncSlot for PingParallelSlot {
         slot: &RwLockReadGuard<'p, Self>,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        <PingSequentialSlot as SyncSlot>::deserialize(&slot.sequential, packet)
+        <PingSyncSlot as SyncSlot>::deserialize(&slot.sync, packet)
     }
 
     async fn handle_event<'p>(slot: &mut RwLockWriteGuard<'p, Self>, event: Self::Event) -> Vec<Self::Action> {
-        <PingSequentialSlot as SyncSlot>::handle_event(&mut slot.sequential, event)
+        <PingSyncSlot as SyncSlot>::handle_event(&mut slot.sync, event)
     }
 
     async fn serialize<'p>(slot: &RwLockReadGuard<'p, Self>, action: Self::Action) -> tun::TunPacket {
-        <PingSequentialSlot as SyncSlot>::serialize(&slot.sequential, action)
+        <PingSyncSlot as SyncSlot>::serialize(&slot.sync, action)
     }
 
     async fn process<'p>(slot: &RwLockReadGuard<'p, Self>, data: Self::Data) -> SlotProcessResult {
-        <PingSequentialSlot as SyncSlot>::process(&slot.sequential, data)
+        <PingSyncSlot as SyncSlot>::process(&slot.sync, data)
     }
 }

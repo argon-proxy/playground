@@ -1,5 +1,5 @@
-mod parallel;
-pub use parallel::*;
+mod r#async;
+pub use r#async::*;
 
-mod sequential;
-pub use sequential::*;
+mod sync;
+pub use sync::*;
