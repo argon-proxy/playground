@@ -1,5 +1,5 @@
 mod config;
-pub use config::SlotRunnerConfig;
+pub use config::{SlotRunnerConfig, SlotContainer};
 
 mod handle;
 pub use handle::SlotRunnerHandle;

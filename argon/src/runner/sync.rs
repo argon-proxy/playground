@@ -1,8 +1,10 @@
-use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
+use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle, SlotContainer};
 use crate::{
     rack::{SlotReceiver, SlotSender},
     slot::{SyncSlot, SlotPacket},
 };
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct SyncSlotRunnerConfig {}
 
@@ -17,17 +19,21 @@ where
     S: SyncSlot,
 {
     fn build(&mut self, slot: S) -> SyncSlotRunner<S> {
-        SyncSlotRunner { slot }
+        let container = SlotContainer { slot: Arc::new(RwLock::new(slot)) };
+        SyncSlotRunner { container }
     }
 }
 
 pub struct SyncSlotRunner<S: SyncSlot> {
-    pub slot: S,
+    pub container: SlotContainer<S>,
 }
 
 impl<S: SyncSlot> SlotRunner<S> for SyncSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
-        let mut slot = self.slot;
+        let mut slot = match self.container.slot.try_write_owned() {
+            Ok(s) => s,
+            _ => panic!()
+        };
 
         let handle = tokio::spawn(async move {
             while let Some(tun_packet) = rx.recv().await {

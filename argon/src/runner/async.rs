@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::{stream::FuturesUnordered, StreamExt};
 use tokio::sync::RwLock;
 
-use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
+use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle, SlotContainer};
 use crate::{
     error::TunRackError,
     rack::{SlotReceiver, SlotSender},
@@ -44,12 +44,8 @@ where
     }
 }
 
-pub struct AsyncSlotContainer<S: AsyncSlot> {
-    pub slot: Arc<RwLock<S>>,
-}
-
 pub struct AsyncSlotRunner<S: AsyncSlot> {
-    pub container: AsyncSlotContainer<S>,
+    pub container: SlotContainer<S>,
     pub worker_tx: WorkerTx<S>,
     pub worker_rxs: Vec<WorkerRx<S>>,
 }
@@ -60,7 +56,7 @@ where
 {
     pub fn new(slot: S, worker_tx: WorkerTx<S>, worker_rxs: Vec<WorkerRx<S>>) -> Self {
         Self {
-            container: AsyncSlotContainer {
+            container: SlotContainer {
                 slot: Arc::new(RwLock::new(slot)),
             },
             worker_tx,
