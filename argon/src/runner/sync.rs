@@ -1,7 +1,7 @@
 use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
 use crate::{
     rack::{SlotReceiver, SlotSender},
-    slot::{SequentialSlot, SlotPacket},
+    slot::{SyncSlot, SlotPacket},
 };
 
 pub struct SyncSlotRunnerConfig {}
@@ -14,18 +14,18 @@ impl Default for SyncSlotRunnerConfig {
 
 impl<S> SlotRunnerConfig<S, SyncSlotRunner<S>> for SyncSlotRunnerConfig
 where
-    S: SequentialSlot,
+    S: SyncSlot,
 {
     fn build(&mut self, slot: S) -> SyncSlotRunner<S> {
         SyncSlotRunner { slot }
     }
 }
 
-pub struct SyncSlotRunner<S: SequentialSlot> {
+pub struct SyncSlotRunner<S: SyncSlot> {
     pub slot: S,
 }
 
-impl<S: SequentialSlot> SlotRunner<S> for SyncSlotRunner<S> {
+impl<S: SyncSlot> SlotRunner<S> for SyncSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let mut slot = self.slot;
 

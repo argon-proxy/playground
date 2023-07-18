@@ -7,8 +7,8 @@ pub use event::SlotPacket;
 mod process;
 pub use process::SlotProcessResult;
 
-mod sequential;
-pub use sequential::SequentialSlot;
+mod sync;
+pub use sync::SyncSlot;
 
-mod parallel;
-pub use parallel::ParallelSlot;
+mod r#async;
+pub use r#async::AsyncSlot;

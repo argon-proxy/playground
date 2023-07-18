@@ -1,6 +1,6 @@
 use super::{SlotPacket, SlotProcessResult};
 
-pub trait SequentialSlot: Send + Sync + 'static {
+pub trait SyncSlot: Send + Sync + 'static {
     type Event: Send + Sync;
     type Data: Send + Sync;
     type Action: Send + Sync;

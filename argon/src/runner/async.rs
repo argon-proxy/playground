@@ -7,13 +7,13 @@ use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle};
 use crate::{
     error::TunRackError,
     rack::{SlotReceiver, SlotSender},
-    slot::{ParallelSlot, SlotPacket},
+    slot::{AsyncSlot, SlotPacket},
 };
 
-use flume::{Sender, Receiver};
+use flume;
 
-type WorkerTx<S> = flume::Sender<<S as ParallelSlot>::Data>;
-type WorkerRx<S> = flume::Receiver<<S as ParallelSlot>::Data>;
+type WorkerTx<S> = flume::Sender<<S as AsyncSlot>::Data>;
+type WorkerRx<S> = flume::Receiver<<S as AsyncSlot>::Data>;
 
 const WORKER_DEFAULT_CHANNEL_SIZE: usize = 2048;
 
@@ -33,7 +33,7 @@ impl Default for AsyncSlotRunnerConfig {
 
 impl<S> SlotRunnerConfig<S, AsyncSlotRunner<S>> for AsyncSlotRunnerConfig
 where
-    S: ParallelSlot,
+    S: AsyncSlot,
 {
     fn build(&mut self, slot: S) -> AsyncSlotRunner<S> {
         let (worker_tx, worker_rx) = flume::bounded(self.worker_channel_size);
@@ -44,11 +44,11 @@ where
     }
 }
 
-pub struct AsyncSlotContainer<S: ParallelSlot> {
+pub struct AsyncSlotContainer<S: AsyncSlot> {
     pub slot: Arc<RwLock<S>>,
 }
 
-pub struct AsyncSlotRunner<S: ParallelSlot> {
+pub struct AsyncSlotRunner<S: AsyncSlot> {
     pub container: AsyncSlotContainer<S>,
     pub worker_tx: WorkerTx<S>,
     pub worker_rxs: Vec<WorkerRx<S>>,
@@ -56,7 +56,7 @@ pub struct AsyncSlotRunner<S: ParallelSlot> {
 
 impl<S> AsyncSlotRunner<S>
 where
-    S: ParallelSlot,
+    S: AsyncSlot,
 {
     pub fn new(slot: S, worker_tx: WorkerTx<S>, worker_rxs: Vec<WorkerRx<S>>) -> Self {
         Self {
@@ -69,7 +69,7 @@ where
     }
 }
 
-impl<S: ParallelSlot> SlotRunner<S> for AsyncSlotRunner<S> {
+impl<S: AsyncSlot> SlotRunner<S> for AsyncSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let slot = self.container.slot;
         let worker_tx = self.worker_tx;
@@ -90,7 +90,7 @@ impl<S: ParallelSlot> SlotRunner<S> for AsyncSlotRunner<S> {
 
                         let slotlock = slot.read().await;
 
-                        let result = <S as ParallelSlot>::process(&slotlock, data).await;
+                        let result = <S as AsyncSlot>::process(&slotlock, data).await;
 
                         for forward in result.forward {
                             tx.send(forward).await?;
@@ -110,7 +110,7 @@ impl<S: ParallelSlot> SlotRunner<S> for AsyncSlotRunner<S> {
 
                         let mut slotlock = slot.write().await;
 
-                        let packet = match <S as ParallelSlot>::deserialize(&mut slotlock, tun_packet).await {
+                        let packet = match <S as AsyncSlot>::deserialize(&mut slotlock, tun_packet).await {
                             Ok(packet) => packet,
                             Err(tun_packet) => {
                                 tx.send(tun_packet).await?;
@@ -120,12 +120,12 @@ impl<S: ParallelSlot> SlotRunner<S> for AsyncSlotRunner<S> {
 
                         match packet {
                             SlotPacket::Event(event) => {
-                                let actions = <S as ParallelSlot>::handle_event(&mut slotlock, event).await;
+                                let actions = <S as AsyncSlot>::handle_event(&mut slotlock, event).await;
 
                                 let slotlock = slotlock.downgrade();
 
                                 for action in actions {
-                                    exit_tx.send(<S as ParallelSlot>::serialize(&slotlock, action).await).await?;
+                                    exit_tx.send(<S as AsyncSlot>::serialize(&slotlock, action).await).await?;
                                 }
                             },
                             SlotPacket::Data(data) => {

@@ -1,4 +1,4 @@
-use argon::slot::{ParallelSlot, SequentialSlot, SlotBuilder, SlotPacket, SlotProcessResult};
+use argon::slot::{AsyncSlot, SyncSlot, SlotBuilder, SlotPacket, SlotProcessResult};
 use async_trait::async_trait;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
@@ -25,7 +25,7 @@ pub struct PingParallelSlot {
 }
 
 #[async_trait]
-impl ParallelSlot for PingParallelSlot {
+impl AsyncSlot for PingParallelSlot {
     type Event = ();
     type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
     type Action = ();
@@ -34,18 +34,18 @@ impl ParallelSlot for PingParallelSlot {
         slot: &mut RwLockWriteGuard<'p, Self>,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        <PingSequentialSlot as SequentialSlot>::deserialize(&slot.sequential, packet)
+        <PingSequentialSlot as SyncSlot>::deserialize(&slot.sequential, packet)
     }
 
     async fn handle_event<'p>(slot: &mut RwLockWriteGuard<'p, Self>, event: Self::Event) -> Vec<Self::Action> {
-        <PingSequentialSlot as SequentialSlot>::handle_event(&mut slot.sequential, event)
+        <PingSequentialSlot as SyncSlot>::handle_event(&mut slot.sequential, event)
     }
 
     async fn serialize<'p>(slot: &RwLockReadGuard<'p, Self>, action: Self::Action) -> tun::TunPacket {
-        <PingSequentialSlot as SequentialSlot>::serialize(&slot.sequential, action)
+        <PingSequentialSlot as SyncSlot>::serialize(&slot.sequential, action)
     }
 
     async fn process<'p>(slot: &RwLockReadGuard<'p, Self>, data: Self::Data) -> SlotProcessResult {
-        <PingSequentialSlot as SequentialSlot>::process(&slot.sequential, data)
+        <PingSequentialSlot as SyncSlot>::process(&slot.sequential, data)
     }
 }

@@ -1,4 +1,4 @@
-use argon::slot::{SequentialSlot, SlotBuilder, SlotPacket, SlotProcessResult};
+use argon::slot::{SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
 
 pub struct LogSlotBuilder {}
 
@@ -16,7 +16,7 @@ impl SlotBuilder<LogSlot> for LogSlotBuilder {
 
 pub struct LogSlot {}
 
-impl SequentialSlot for LogSlot {
+impl SyncSlot for LogSlot {
     type Event = ();
     type Data = tun::TunPacket;
     type Action = ();

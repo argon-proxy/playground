@@ -4,7 +4,7 @@ use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 use super::{SlotPacket, SlotProcessResult};
 
 #[async_trait]
-pub trait ParallelSlot: Send + Sync + 'static {
+pub trait AsyncSlot: Send + Sync + 'static {
     type Event: Send + Sync;
     type Data: Send + Sync;
     type Action: Send + Sync;
