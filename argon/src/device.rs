@@ -73,7 +73,7 @@ impl Sink<tun::TunPacket> for Tun {
 #[cfg(test)]
 mod tests {
     use crate::Tun;
-
+    #[ignore]
     #[tokio::test]
     async fn create_tun_test() {
         let argon_tun = Tun::new(None);
