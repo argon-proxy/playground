@@ -4,28 +4,28 @@ use crate::{
     slot::{SequentialSlot, SlotPacket},
 };
 
-pub struct SequentialSlotRunnerConfig {}
+pub struct SyncSlotRunnerConfig {}
 
-impl Default for SequentialSlotRunnerConfig {
+impl Default for SyncSlotRunnerConfig {
     fn default() -> Self {
         Self {}
     }
 }
 
-impl<S> SlotRunnerConfig<S, SequentialSlotRunner<S>> for SequentialSlotRunnerConfig
+impl<S> SlotRunnerConfig<S, SyncSlotRunner<S>> for SyncSlotRunnerConfig
 where
     S: SequentialSlot,
 {
-    fn build(&mut self, slot: S) -> SequentialSlotRunner<S> {
-        SequentialSlotRunner { slot }
+    fn build(&mut self, slot: S) -> SyncSlotRunner<S> {
+        SyncSlotRunner { slot }
     }
 }
 
-pub struct SequentialSlotRunner<S: SequentialSlot> {
+pub struct SyncSlotRunner<S: SequentialSlot> {
     pub slot: S,
 }
 
-impl<S: SequentialSlot> SlotRunner<S> for SequentialSlotRunner<S> {
+impl<S: SequentialSlot> SlotRunner<S> for SyncSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let mut slot = self.slot;
 

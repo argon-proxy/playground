@@ -17,12 +17,12 @@ type WorkerRx<S> = flume::Receiver<<S as ParallelSlot>::Data>;
 
 const WORKER_DEFAULT_CHANNEL_SIZE: usize = 2048;
 
-pub struct ParallelSlotRunnerConfig {
+pub struct AsyncSlotRunnerConfig {
     pub workers: usize,
     pub worker_channel_size: usize,
 }
 
-impl Default for ParallelSlotRunnerConfig {
+impl Default for AsyncSlotRunnerConfig {
     fn default() -> Self {
         Self {
             workers: num_cpus::get(),
@@ -31,36 +31,36 @@ impl Default for ParallelSlotRunnerConfig {
     }
 }
 
-impl<S> SlotRunnerConfig<S, ParallelSlotRunner<S>> for ParallelSlotRunnerConfig
+impl<S> SlotRunnerConfig<S, AsyncSlotRunner<S>> for AsyncSlotRunnerConfig
 where
     S: ParallelSlot,
 {
-    fn build(&mut self, slot: S) -> ParallelSlotRunner<S> {
+    fn build(&mut self, slot: S) -> AsyncSlotRunner<S> {
         let (worker_tx, worker_rx) = flume::bounded(self.worker_channel_size);
 
         let worker_rxs = (0..self.workers).map(|_| worker_rx.clone()).collect::<Vec<_>>();
 
-        ParallelSlotRunner::new(slot, worker_tx, worker_rxs)
+        AsyncSlotRunner::new(slot, worker_tx, worker_rxs)
     }
 }
 
-pub struct ParallelSlotContainer<S: ParallelSlot> {
+pub struct AsyncSlotContainer<S: ParallelSlot> {
     pub slot: Arc<RwLock<S>>,
 }
 
-pub struct ParallelSlotRunner<S: ParallelSlot> {
-    pub container: ParallelSlotContainer<S>,
+pub struct AsyncSlotRunner<S: ParallelSlot> {
+    pub container: AsyncSlotContainer<S>,
     pub worker_tx: WorkerTx<S>,
     pub worker_rxs: Vec<WorkerRx<S>>,
 }
 
-impl<S> ParallelSlotRunner<S>
+impl<S> AsyncSlotRunner<S>
 where
     S: ParallelSlot,
 {
     pub fn new(slot: S, worker_tx: WorkerTx<S>, worker_rxs: Vec<WorkerRx<S>>) -> Self {
         Self {
-            container: ParallelSlotContainer {
+            container: AsyncSlotContainer {
                 slot: Arc::new(RwLock::new(slot)),
             },
             worker_tx,
@@ -69,7 +69,7 @@ where
     }
 }
 
-impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
+impl<S: ParallelSlot> SlotRunner<S> for AsyncSlotRunner<S> {
     fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
         let slot = self.container.slot;
         let worker_tx = self.worker_tx;

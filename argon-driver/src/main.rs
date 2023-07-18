@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use argon::{
     error::TunRackError,
     rack::TunRack,
-    runner::{ParallelSlotRunnerConfig, SequentialSlotRunnerConfig},
+    runner::{AsyncSlotRunnerConfig, SyncSlotRunnerConfig},
     Tun,
 };
 use argon_slots::{log::LogSlotBuilder, ping::PingParallelSlotBuilder};
@@ -37,8 +37,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingParallelSlotBuilder::default(), ParallelSlotRunnerConfig::default());
-    rack.add_slot(LogSlotBuilder::default(), SequentialSlotRunnerConfig::default());
+    rack.add_slot(PingParallelSlotBuilder::default(), AsyncSlotRunnerConfig::default());
+    rack.add_slot(LogSlotBuilder::default(), SyncSlotRunnerConfig::default());
 
     loop {
         tokio::select! {

@@ -4,11 +4,11 @@ pub use config::SlotRunnerConfig;
 mod handle;
 pub use handle::SlotRunnerHandle;
 
-mod parallel;
-pub use parallel::*;
+mod r#async;
+pub use r#async::*;
 
-mod sequential;
-pub use sequential::*;
+mod sync;
+pub use sync::*;
 
 mod traits;
 pub use traits::*;
