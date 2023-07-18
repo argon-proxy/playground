@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.dependencies]
-async-channel = "=1.7.1"
+flume = "=0.10.14"
 async-trait = "=0.1.67"
 clap = "=4.3.2"
 futures = "=0.3.28"

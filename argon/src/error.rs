@@ -26,5 +26,5 @@ pub enum TunRackError {
     SlotAsyncChannelSendError,
 
     #[error("SlotAsyncChannelRecvError({0})")]
-    SlotAsyncChannelRecvError(#[from] async_channel::RecvError),
+    SlotAsyncChannelRecvError(#[from] flume::RecvError),
 }

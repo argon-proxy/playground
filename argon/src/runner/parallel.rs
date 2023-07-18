@@ -10,8 +10,10 @@ use crate::{
     slot::{ParallelSlot, SlotPacket},
 };
 
-type WorkerTx<S> = async_channel::Sender<<S as ParallelSlot>::Data>;
-type WorkerRx<S> = async_channel::Receiver<<S as ParallelSlot>::Data>;
+use flume::{Sender, Receiver};
+
+type WorkerTx<S> = flume::Sender<<S as ParallelSlot>::Data>;
+type WorkerRx<S> = flume::Receiver<<S as ParallelSlot>::Data>;
 
 const WORKER_DEFAULT_CHANNEL_SIZE: usize = 2048;
 
@@ -34,7 +36,7 @@ where
     S: ParallelSlot,
 {
     fn build(&mut self, slot: S) -> ParallelSlotRunner<S> {
-        let (worker_tx, worker_rx) = async_channel::bounded(self.worker_channel_size);
+        let (worker_tx, worker_rx) = flume::bounded(self.worker_channel_size);
 
         let worker_rxs = (0..self.workers).map(|_| worker_rx.clone()).collect::<Vec<_>>();
 
@@ -84,7 +86,7 @@ impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
 
                 workers.push(tokio::spawn(async move {
                     loop {
-                        let data = worker_rx.recv().await?;
+                        let data = worker_rx.recv_async().await?;
 
                         let slotlock = slot.read().await;
 
@@ -127,7 +129,7 @@ impl<S: ParallelSlot> SlotRunner<S> for ParallelSlotRunner<S> {
                                 }
                             },
                             SlotPacket::Data(data) => {
-                                worker_tx.send(data).await.map_err(|_| TunRackError::SlotAsyncChannelSendError)?;
+                                worker_tx.send_async(data).await.map_err(|_| TunRackError::SlotAsyncChannelSendError)?;
                             }
                         }
                     }
