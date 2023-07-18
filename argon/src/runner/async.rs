@@ -8,13 +8,8 @@ use crate::{
     slot::{AsyncSlot, SlotPacket},
 };
 
+#[derive(Default)]
 pub struct AsyncSlotRunnerConfig {}
-
-impl Default for AsyncSlotRunnerConfig {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl<S> SlotRunnerConfig<S, AsyncSlotRunner<S>> for AsyncSlotRunnerConfig
 where

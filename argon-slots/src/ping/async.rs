@@ -4,13 +4,8 @@ use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 use super::PingSyncSlot;
 
+#[derive(Default)]
 pub struct PingAsyncSlotBuilder {}
-
-impl Default for PingAsyncSlotBuilder {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl SlotBuilder<PingAsyncSlot> for PingAsyncSlotBuilder {
     fn build(self) -> PingAsyncSlot {

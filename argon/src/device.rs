@@ -1,6 +1,5 @@
 use futures::{Sink, SinkExt, Stream, StreamExt};
 use tokio_util::codec::Framed;
-use tun;
 
 pub struct Tun {
     frame: Framed<tun::AsyncDevice, tun::TunPacketCodec>,
@@ -78,6 +77,6 @@ mod tests {
     async fn create_tun_test() {
         let argon_tun = Tun::new(None);
 
-        assert!(argon_tun.is_ok())
+        assert!(argon_tun.is_ok());
     }
 }

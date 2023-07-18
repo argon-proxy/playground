@@ -1,12 +1,7 @@
 use argon::slot::{SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
 
+#[derive(Default)]
 pub struct LogSlotBuilder {}
-
-impl Default for LogSlotBuilder {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl SlotBuilder<LogSlot> for LogSlotBuilder {
     fn build(self) -> LogSlot {

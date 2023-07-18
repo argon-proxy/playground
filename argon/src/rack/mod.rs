@@ -53,7 +53,9 @@ impl TunRack {
 
         let runner = runner_config.build(slot_builder.build());
 
-        Ok(self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone())?))
+        self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone())?);
+
+        Ok(())
     }
 
     pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), SlotSendError> {

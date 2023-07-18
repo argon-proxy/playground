@@ -8,13 +8,8 @@ use crate::{
     slot::{SlotPacket, SyncSlot},
 };
 
+#[derive(Default)]
 pub struct SyncSlotRunnerConfig {}
-
-impl Default for SyncSlotRunnerConfig {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl<S> SlotRunnerConfig<S, SyncSlotRunner<S>> for SyncSlotRunnerConfig
 where
