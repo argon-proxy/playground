@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-flume = { workspace = true}
 async-trait = { workspace = true }
 futures = { workspace = true }
+flume = { workspace = true}
 num_cpus = { workspace = true }
 packet = { workspace = true }
 thiserror = { workspace = true }

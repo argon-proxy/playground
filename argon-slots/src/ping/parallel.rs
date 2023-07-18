@@ -1,4 +1,4 @@
-use argon::slot::{AsyncSlot, SyncSlot, SlotBuilder, SlotPacket, SlotProcessResult};
+use argon::slot::{AsyncSlot, SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
 use async_trait::async_trait;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
@@ -31,7 +31,7 @@ impl AsyncSlot for PingParallelSlot {
     type Action = ();
 
     async fn deserialize<'p>(
-        slot: &mut RwLockWriteGuard<'p, Self>,
+        slot: &RwLockReadGuard<'p, Self>,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         <PingSequentialSlot as SyncSlot>::deserialize(&slot.sequential, packet)

@@ -2,7 +2,7 @@ use futures::{FutureExt, Stream};
 
 use crate::{
     error::TunRackError,
-    runner::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle},
+    runner::{SlotRunner, SlotRunnerConfig, SlotRunnerError, SlotRunnerHandle},
     slot::SlotBuilder,
 };
 
@@ -41,7 +41,7 @@ impl TunRack {
         )
     }
 
-    pub fn add_slot<S, SB, SR, SRC>(&mut self, slot_builder: SB, mut runner_config: SRC)
+    pub fn add_slot<S, SB, SR, SRC>(&mut self, slot_builder: SB, mut runner_config: SRC) -> Result<(), TunRackError>
     where
         SB: SlotBuilder<S>,
         SR: SlotRunner<S>,
@@ -53,7 +53,7 @@ impl TunRack {
 
         let runner = runner_config.build(slot_builder.build());
 
-        self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone()));
+        Ok(self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone())?))
     }
 
     pub async fn send(&mut self, packet: tun::TunPacket) -> Result<(), SlotSendError> {
@@ -71,14 +71,18 @@ impl Stream for TunRack {
         for slot in &mut self.racks {
             if let std::task::Poll::Ready(result) = slot.handle.poll_unpin(cx) {
                 return std::task::Poll::Ready(Some(Err(match result {
-                    Ok(item) => item.err().unwrap_or(TunRackError::SlotCrash),
+                    Ok(item) => item.err().unwrap_or(SlotRunnerError::SlotCrash).into(),
                     Err(e) => TunRackError::TokioJoinError(e),
                 })));
             }
         }
 
         if let std::task::Poll::Ready(result) = self.last_rx.poll_recv(cx) {
-            std::task::Poll::Ready(Some(result.ok_or(TunRackError::SlotCrash)))
+            std::task::Poll::Ready(Some(
+                result
+                    .ok_or(SlotRunnerError::SlotCrash)
+                    .map_err(Into::<TunRackError>::into),
+            ))
         } else {
             std::task::Poll::Pending
         }

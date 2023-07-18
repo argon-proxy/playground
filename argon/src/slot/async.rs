@@ -10,7 +10,7 @@ pub trait AsyncSlot: Send + Sync + 'static {
     type Action: Send + Sync;
 
     async fn deserialize<'p>(
-        slot: &mut RwLockWriteGuard<'p, Self>,
+        slot: &RwLockReadGuard<'p, Self>,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
 

@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use argon::{
     error::TunRackError,
     rack::TunRack,
-    runner::{AsyncSlotRunnerConfig, SyncSlotRunnerConfig},
+    runner::{AsyncSlotRunnerConfig, SlotRunnerError, SyncSlotRunnerConfig},
     Tun,
 };
 use argon_slots::{log::LogSlotBuilder, ping::PingParallelSlotBuilder};
@@ -37,8 +37,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
 
-    rack.add_slot(PingParallelSlotBuilder::default(), AsyncSlotRunnerConfig::default());
-    rack.add_slot(LogSlotBuilder::default(), SyncSlotRunnerConfig::default());
+    rack.add_slot(PingParallelSlotBuilder::default(), AsyncSlotRunnerConfig::default())?;
+    rack.add_slot(LogSlotBuilder::default(), SyncSlotRunnerConfig::default())?;
 
     loop {
         tokio::select! {
@@ -52,7 +52,7 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
                 if let Some(tun_packet) = option {
                     tun.send(tun_packet).await.map_err(TunRackError::IoError)?;
                 } else {
-                    return Err(TunRackError::SlotChannelClosed);
+                    return Err(SlotRunnerError::SlotCrash.into());
                 }
             }
 
@@ -60,7 +60,7 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
                 let result = if let Some(packet) = result {
                     packet
                 } else {
-                    return Err(TunRackError::SlotChannelClosed);
+                    return Err(SlotRunnerError::SlotCrash.into());
                 };
 
                 // Consume any packet that goes through the tun_rack and does not get forwarded through the exit_tx

@@ -1,6 +1,8 @@
-use crate::runner::SlotRunner;
 use std::sync::Arc;
+
 use tokio::sync::RwLock;
+
+use crate::runner::SlotRunner;
 
 pub trait SlotRunnerConfig<S, SR>: Default
 where

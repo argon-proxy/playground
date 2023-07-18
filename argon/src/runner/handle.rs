@@ -1,7 +1,7 @@
 use tokio::task::JoinHandle;
 
-use crate::error::TunRackError;
+use super::SlotRunnerError;
 
 pub struct SlotRunnerHandle {
-    pub handle: JoinHandle<Result<(), TunRackError>>,
+    pub handle: JoinHandle<Result<(), SlotRunnerError>>,
 }

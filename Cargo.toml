@@ -6,9 +6,9 @@ members = [
 ]
 
 [workspace.dependencies]
-flume = "=0.10.14"
 async-trait = "=0.1.67"
 clap = "=4.3.2"
+flume = "=0.10.14"
 futures = "=0.3.28"
 num_cpus = "=1.16.0"
 packet = "=0.1.4"

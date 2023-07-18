@@ -1,5 +1,8 @@
 mod config;
-pub use config::{SlotRunnerConfig, SlotContainer};
+pub use config::{SlotContainer, SlotRunnerConfig};
+
+mod error;
+pub use error::SlotRunnerError;
 
 mod handle;
 pub use handle::SlotRunnerHandle;

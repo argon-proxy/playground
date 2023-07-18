@@ -1,10 +1,12 @@
-use super::{SlotRunner, SlotRunnerConfig, SlotRunnerHandle, SlotContainer};
+use std::sync::Arc;
+
+use tokio::sync::RwLock;
+
+use super::{SlotContainer, SlotRunner, SlotRunnerConfig, SlotRunnerError, SlotRunnerHandle};
 use crate::{
     rack::{SlotReceiver, SlotSender},
-    slot::{SyncSlot, SlotPacket},
+    slot::{SlotPacket, SyncSlot},
 };
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 pub struct SyncSlotRunnerConfig {}
 
@@ -19,7 +21,9 @@ where
     S: SyncSlot,
 {
     fn build(&mut self, slot: S) -> SyncSlotRunner<S> {
-        let container = SlotContainer { slot: Arc::new(RwLock::new(slot)) };
+        let container = SlotContainer {
+            slot: Arc::new(RwLock::new(slot)),
+        };
         SyncSlotRunner { container }
     }
 }
@@ -29,11 +33,13 @@ pub struct SyncSlotRunner<S: SyncSlot> {
 }
 
 impl<S: SyncSlot> SlotRunner<S> for SyncSlotRunner<S> {
-    fn run(self, mut rx: SlotReceiver, tx: SlotSender, exit_tx: SlotSender) -> SlotRunnerHandle {
-        let mut slot = match self.container.slot.try_write_owned() {
-            Ok(s) => s,
-            _ => panic!()
-        };
+    fn run(
+        self,
+        mut rx: SlotReceiver,
+        tx: SlotSender,
+        exit_tx: SlotSender,
+    ) -> Result<SlotRunnerHandle, SlotRunnerError> {
+        let mut slot = self.container.slot.try_write_owned()?;
 
         let handle = tokio::spawn(async move {
             while let Some(tun_packet) = rx.recv().await {
@@ -70,6 +76,6 @@ impl<S: SyncSlot> SlotRunner<S> for SyncSlotRunner<S> {
             Ok(())
         });
 
-        SlotRunnerHandle { handle }
+        Ok(SlotRunnerHandle { handle })
     }
 }
