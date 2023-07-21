@@ -10,11 +10,17 @@ pub enum TunRackError {
     #[error("IoError({0})")]
     IoError(std::io::Error),
 
+    #[error("SlotChannelClosedError")]
+    SlotChannelClosedError,
+
     #[error("SlotSendError({0})")]
     SlotSendError(#[from] SlotSendError),
 
     #[error("SlotRunnerError({0})")]
     SlotRunnerError(#[from] SlotRunnerError),
+
+    #[error("SlotOverloadError")]
+    SlotOverloadError,
 
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),

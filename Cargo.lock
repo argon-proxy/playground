@@ -73,6 +73,7 @@ dependencies = [
  "async-trait",
  "flume",
  "futures",
+ "nonempty",
  "num_cpus",
  "packet",
  "thiserror",
@@ -476,6 +477,12 @@ checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
 dependencies = [
  "getrandom",
 ]
+
+[[package]]
+name = "nonempty"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aeaf4ad7403de93e699c191202f017118df734d3850b01e13a3a8b2e6953d3c9"
 
 [[package]]
 name = "num_cpus"
