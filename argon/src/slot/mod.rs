@@ -1,6 +1,3 @@
-mod builder;
-pub use builder::SlotBuilder;
-
 mod event;
 pub use event::SlotPacket;
 

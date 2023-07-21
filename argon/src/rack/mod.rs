@@ -3,7 +3,6 @@ use futures::{FutureExt, Stream};
 use crate::{
     error::TunRackError,
     runner::{SlotRunner, SlotRunnerConfig, SlotRunnerError, SlotRunnerHandle},
-    slot::SlotBuilder,
 };
 
 mod types;
@@ -41,9 +40,8 @@ impl TunRack {
         )
     }
 
-    pub fn add_slot<S, SB, SR, SRC>(&mut self, slot_builder: SB, mut runner_config: SRC) -> Result<(), TunRackError>
+    pub fn add_slot<S, SR, SRC>(&mut self, slot: S, mut runner_config: SRC) -> Result<(), TunRackError>
     where
-        SB: SlotBuilder<S>,
         SR: SlotRunner<S>,
         SRC: SlotRunnerConfig<S, SR>,
     {
@@ -51,7 +49,7 @@ impl TunRack {
 
         std::mem::swap(&mut self.last_rx, &mut slot_rx);
 
-        let runner = runner_config.build(slot_builder.build());
+        let runner = runner_config.build(slot);
 
         self.racks.push(runner.run(slot_rx, slot_tx, self.exit_tx.clone())?);
 

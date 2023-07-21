@@ -1,18 +1,10 @@
-use argon::slot::{AsyncSlot, SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
+use argon::slot::{AsyncSlot, SlotPacket, SlotProcessResult, SyncSlot};
 use async_trait::async_trait;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 use super::PingSyncSlot;
 
 #[derive(Default)]
-pub struct PingAsyncSlotBuilder {}
-
-impl SlotBuilder<PingAsyncSlot> for PingAsyncSlotBuilder {
-    fn build(self) -> PingAsyncSlot {
-        PingAsyncSlot { sync: PingSyncSlot {} }
-    }
-}
-
 pub struct PingAsyncSlot {
     sync: PingSyncSlot,
 }

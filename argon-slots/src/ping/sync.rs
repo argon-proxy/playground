@@ -1,15 +1,7 @@
-use argon::slot::{SlotBuilder, SlotPacket, SlotProcessResult, SyncSlot};
+use argon::slot::{SlotPacket, SlotProcessResult, SyncSlot};
 use packet::{Builder, Packet};
 
 #[derive(Default)]
-pub struct PingSyncSlotBuilder {}
-
-impl SlotBuilder<PingSyncSlot> for PingSyncSlotBuilder {
-    fn build(self) -> PingSyncSlot {
-        PingSyncSlot {}
-    }
-}
-
 pub struct PingSyncSlot {}
 
 impl SyncSlot for PingSyncSlot {
