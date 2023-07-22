@@ -14,7 +14,10 @@ impl Tun {
             config.mtu(mtu.into());
         }
 
-        config.address((10, 0, 0, 1)).netmask((255, 255, 255, 0)).up();
+        config
+            .address((10, 0, 0, 1))
+            .netmask((255, 255, 255, 0))
+            .up();
 
         #[cfg(target_os = "linux")]
         config.platform(|config| {
@@ -50,7 +53,10 @@ impl Sink<tun::TunPacket> for Tun {
         self.frame.poll_ready_unpin(cx)
     }
 
-    fn start_send(mut self: std::pin::Pin<&mut Self>, item: tun::TunPacket) -> Result<(), Self::Error> {
+    fn start_send(
+        mut self: std::pin::Pin<&mut Self>,
+        item: tun::TunPacket,
+    ) -> Result<(), Self::Error> {
         self.frame.start_send_unpin(item)
     }
 

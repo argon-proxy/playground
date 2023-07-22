@@ -1,4 +1,6 @@
-use argon::slot::{AsyncSlotProcessor, SlotPacket, SlotProcessResult, SyncSlotProcessor};
+use argon::slot::{
+    AsyncSlotProcessor, SlotPacket, SlotProcessResult, SyncSlotProcessor,
+};
 use async_trait::async_trait;
 use packet::{Builder, Packet};
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
@@ -8,17 +10,28 @@ pub struct PingSlotProcessor {}
 
 impl SyncSlotProcessor for PingSlotProcessor {
     type Event = ();
-    type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
+    type Data = (
+        packet::ip::v4::Packet<Vec<u8>>,
+        packet::icmp::echo::Packet<Vec<u8>>,
+    );
     type Action = ();
 
-    fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    fn deserialize(
+        &self,
+        packet: tun::TunPacket,
+    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         match packet::ip::Packet::new(packet.get_bytes()) {
-            Ok(packet::ip::Packet::V4(ipv4_packet)) => match packet::icmp::Packet::new(ipv4_packet.payload()) {
-                Ok(icmp_packet) => match icmp_packet.echo() {
-                    Ok(icmp_echo_packet) => Ok(SlotPacket::Data((ipv4_packet.to_owned(), icmp_echo_packet.to_owned()))),
+            Ok(packet::ip::Packet::V4(ipv4_packet)) => {
+                match packet::icmp::Packet::new(ipv4_packet.payload()) {
+                    Ok(icmp_packet) => match icmp_packet.echo() {
+                        Ok(icmp_echo_packet) => Ok(SlotPacket::Data((
+                            ipv4_packet.to_owned(),
+                            icmp_echo_packet.to_owned(),
+                        ))),
+                        _ => Err(packet),
+                    },
                     _ => Err(packet),
-                },
-                _ => Err(packet),
+                }
             },
             _ => Err(packet),
         }
@@ -67,7 +80,10 @@ impl SyncSlotProcessor for PingSlotProcessor {
 #[async_trait]
 impl AsyncSlotProcessor for PingSlotProcessor {
     type Event = ();
-    type Data = (packet::ip::v4::Packet<Vec<u8>>, packet::icmp::echo::Packet<Vec<u8>>);
+    type Data = (
+        packet::ip::v4::Packet<Vec<u8>>,
+        packet::icmp::echo::Packet<Vec<u8>>,
+    );
     type Action = ();
 
     async fn deserialize<'p>(
@@ -77,15 +93,24 @@ impl AsyncSlotProcessor for PingSlotProcessor {
         <Self as SyncSlotProcessor>::deserialize(slot, packet)
     }
 
-    async fn handle_event<'p>(slot: &mut RwLockWriteGuard<'p, Self>, event: Self::Event) -> Vec<Self::Action> {
+    async fn handle_event<'p>(
+        slot: &mut RwLockWriteGuard<'p, Self>,
+        event: Self::Event,
+    ) -> Vec<Self::Action> {
         <Self as SyncSlotProcessor>::handle_event(slot, event)
     }
 
-    async fn serialize<'p>(slot: &RwLockReadGuard<'p, Self>, action: Self::Action) -> tun::TunPacket {
+    async fn serialize<'p>(
+        slot: &RwLockReadGuard<'p, Self>,
+        action: Self::Action,
+    ) -> tun::TunPacket {
         <Self as SyncSlotProcessor>::serialize(slot, action)
     }
 
-    async fn process<'p>(slot: &RwLockReadGuard<'p, Self>, data: Self::Data) -> SlotProcessResult {
+    async fn process<'p>(
+        slot: &RwLockReadGuard<'p, Self>,
+        data: Self::Data,
+    ) -> SlotProcessResult {
         <Self as SyncSlotProcessor>::process(slot, data)
     }
 }

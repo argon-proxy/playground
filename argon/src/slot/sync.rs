@@ -14,7 +14,10 @@ pub trait SyncSlotProcessor: Send + Sync + 'static {
     type Data: Send + Sync;
     type Action: Send + Sync;
 
-    fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
+    fn deserialize(
+        &self,
+        packet: tun::TunPacket,
+    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
 
     fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action>;
 
@@ -57,7 +60,10 @@ where
             while let Some(tun_packet) = entry_rx.next().await {
                 let processor_lock = processor.read().await;
 
-                let packet = match <SP as SyncSlotProcessor>::deserialize(&processor_lock, tun_packet) {
+                let packet = match <SP as SyncSlotProcessor>::deserialize(
+                    &processor_lock,
+                    tun_packet,
+                ) {
                     Ok(packet) => packet,
                     Err(tun_packet) => {
                         if !next_tx.fire(tun_packet)? {
@@ -74,18 +80,29 @@ where
 
                         let mut processor_lock = processor.write().await;
 
-                        let actions = <SP as SyncSlotProcessor>::handle_event(&mut processor_lock, event);
+                        let actions = <SP as SyncSlotProcessor>::handle_event(
+                            &mut processor_lock,
+                            event,
+                        );
 
                         let processor_lock = processor_lock.downgrade();
 
                         for action in actions {
-                            if !exit_tx.fire(<SP as SyncSlotProcessor>::serialize(&processor_lock, action))? {
+                            if !exit_tx.fire(
+                                <SP as SyncSlotProcessor>::serialize(
+                                    &processor_lock,
+                                    action,
+                                ),
+                            )? {
                                 println!("[warn] dropped packet");
                             }
                         }
                     },
                     SlotPacket::Data(data) => {
-                        let result = <SP as SyncSlotProcessor>::process(&processor_lock, data);
+                        let result = <SP as SyncSlotProcessor>::process(
+                            &processor_lock,
+                            data,
+                        );
 
                         for forward in result.forward {
                             if !next_tx.fire(forward)? {

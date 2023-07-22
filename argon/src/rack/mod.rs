@@ -26,8 +26,11 @@ impl TunRackBuilder {
         self
     }
 
-    pub fn build(self) -> Result<(RotaryCanon, TunRack, RotaryTarget), TunRackError> {
-        let (entry_tx, entry_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
+    pub fn build(
+        self,
+    ) -> Result<(RotaryCanon, TunRack, RotaryTarget), TunRackError> {
+        let (entry_tx, entry_rx) =
+            build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
 
         let entry_tx = RotaryCanon::new(NonEmpty::new(entry_tx));
         let mut entry_rx = RotaryTarget::new(NonEmpty::new(entry_rx));
@@ -40,7 +43,8 @@ impl TunRackBuilder {
         let mut handles = Vec::new();
 
         for slot in self.slots {
-            let (new_entry_rx, handle) = TunRackBuilder::build_slot(entry_rx, slot, exit_tx.clone())?;
+            let (new_entry_rx, handle) =
+                TunRackBuilder::build_slot(entry_rx, slot, exit_tx.clone())?;
 
             entry_rx = new_entry_rx;
             handles.push(handle);
@@ -85,7 +89,9 @@ impl Stream for TunRack {
         for slot in &mut self.handles {
             if let std::task::Poll::Ready(result) = slot.handle.poll_unpin(cx) {
                 return std::task::Poll::Ready(Some(Err(match result {
-                    Ok(item) => item.err().unwrap_or(SlotWorkerError::SlotCrash).into(),
+                    Ok(item) => {
+                        item.err().unwrap_or(SlotWorkerError::SlotCrash).into()
+                    },
                     Err(e) => TunRackError::TokioJoinError(e),
                 })));
             }

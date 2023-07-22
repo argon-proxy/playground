@@ -21,11 +21,20 @@ pub trait AsyncSlotProcessor: Send + Sync + 'static {
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
 
-    async fn handle_event<'p>(slot: &mut RwLockWriteGuard<'p, Self>, event: Self::Event) -> Vec<Self::Action>;
+    async fn handle_event<'p>(
+        slot: &mut RwLockWriteGuard<'p, Self>,
+        event: Self::Event,
+    ) -> Vec<Self::Action>;
 
-    async fn serialize<'p>(slot: &RwLockReadGuard<'p, Self>, action: Self::Action) -> tun::TunPacket;
+    async fn serialize<'p>(
+        slot: &RwLockReadGuard<'p, Self>,
+        action: Self::Action,
+    ) -> tun::TunPacket;
 
-    async fn process<'p>(slot: &RwLockReadGuard<'p, Self>, data: Self::Data) -> SlotProcessResult;
+    async fn process<'p>(
+        slot: &RwLockReadGuard<'p, Self>,
+        data: Self::Data,
+    ) -> SlotProcessResult;
 }
 
 pub struct AsyncSlot<SP>
@@ -62,7 +71,12 @@ where
             while let Some(tun_packet) = entry_rx.next().await {
                 let processor_lock = processor.read().await;
 
-                let packet = match <SP as AsyncSlotProcessor>::deserialize(&processor_lock, tun_packet).await {
+                let packet = match <SP as AsyncSlotProcessor>::deserialize(
+                    &processor_lock,
+                    tun_packet,
+                )
+                .await
+                {
                     Ok(packet) => packet,
                     Err(tun_packet) => {
                         if !next_tx.fire(tun_packet)? {
@@ -79,18 +93,32 @@ where
 
                         let mut processor_lock = processor.write().await;
 
-                        let actions = <SP as AsyncSlotProcessor>::handle_event(&mut processor_lock, event).await;
+                        let actions = <SP as AsyncSlotProcessor>::handle_event(
+                            &mut processor_lock,
+                            event,
+                        )
+                        .await;
 
                         let processor_lock = processor_lock.downgrade();
 
                         for action in actions {
-                            if !exit_tx.fire(<SP as AsyncSlotProcessor>::serialize(&processor_lock, action).await)? {
+                            if !exit_tx.fire(
+                                <SP as AsyncSlotProcessor>::serialize(
+                                    &processor_lock,
+                                    action,
+                                )
+                                .await,
+                            )? {
                                 println!("[warn] dropped packet");
                             }
                         }
                     },
                     SlotPacket::Data(data) => {
-                        let result = <SP as AsyncSlotProcessor>::process(&processor_lock, data).await;
+                        let result = <SP as AsyncSlotProcessor>::process(
+                            &processor_lock,
+                            data,
+                        )
+                        .await;
 
                         for forward in result.forward {
                             if !next_tx.fire(forward)? {

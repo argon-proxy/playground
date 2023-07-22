@@ -8,7 +8,10 @@ impl SyncSlotProcessor for LogSlotProcessor {
     type Data = tun::TunPacket;
     type Action = ();
 
-    fn deserialize(&self, packet: tun::TunPacket) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    fn deserialize(
+        &self,
+        packet: tun::TunPacket,
+    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         Ok(SlotPacket::Data(packet))
     }
 

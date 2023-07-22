@@ -8,7 +8,9 @@ type IntraSlotSender = tokio::sync::mpsc::Sender<Packet>;
 type IntraSlotSyncSendError = tokio::sync::mpsc::error::TrySendError<Packet>;
 type IntraSlotReceiver = tokio::sync::mpsc::Receiver<Packet>;
 
-pub fn build_single_channel(channel_size: usize) -> (IntraSlotSender, IntraSlotReceiver) {
+pub fn build_single_channel(
+    channel_size: usize,
+) -> (IntraSlotSender, IntraSlotReceiver) {
     tokio::sync::mpsc::channel(channel_size)
 }
 
@@ -29,7 +31,10 @@ impl RotaryCanon {
         Self { canons, index: 0 }
     }
 
-    pub fn fire(&mut self, mut packet: Packet) -> Result<bool, RotaryCanonError> {
+    pub fn fire(
+        &mut self,
+        mut packet: Packet,
+    ) -> Result<bool, RotaryCanonError> {
         let index_start = self.index;
 
         while let Some(canon) = self.canons.get(self.index) {
@@ -40,7 +45,9 @@ impl RotaryCanon {
 
             packet = match send_error {
                 IntraSlotSyncSendError::Full(packet) => packet,
-                IntraSlotSyncSendError::Closed(_) => return Err(RotaryCanonError::ChannelClosed),
+                IntraSlotSyncSendError::Closed(_) => {
+                    return Err(RotaryCanonError::ChannelClosed)
+                },
             };
 
             self.index = (self.index + 1) % self.canons.len();
