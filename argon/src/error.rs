@@ -4,9 +4,6 @@ use crate::{rotary::RotaryCanonError, slot::worker::SlotWorkerError};
 
 #[derive(Error, Debug)]
 pub enum TunRackError {
-    #[error("TunError({0})")]
-    TunError(#[from] tun::Error),
-
     #[error("IoError({0})")]
     IoError(std::io::Error),
 
@@ -18,4 +15,7 @@ pub enum TunRackError {
 
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),
+
+    #[error("TunError({0})")]
+    TunError(#[from] tun::Error),
 }

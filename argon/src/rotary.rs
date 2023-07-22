@@ -8,7 +8,7 @@ type IntraSlotSender = tokio::sync::mpsc::Sender<Packet>;
 type IntraSlotSyncSendError = tokio::sync::mpsc::error::TrySendError<Packet>;
 type IntraSlotReceiver = tokio::sync::mpsc::Receiver<Packet>;
 
-pub fn build_tunrack_channel(channel_size: usize) -> (IntraSlotSender, IntraSlotReceiver) {
+pub fn build_single_channel(channel_size: usize) -> (IntraSlotSender, IntraSlotReceiver) {
     tokio::sync::mpsc::channel(channel_size)
 }
 

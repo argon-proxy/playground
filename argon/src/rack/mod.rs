@@ -2,8 +2,9 @@ use futures::{FutureExt, Stream};
 use nonempty::NonEmpty;
 
 use crate::{
+    constants::INTRA_SLOT_CHANNEL_SIZE,
     error::TunRackError,
-    rotary::{build_tunrack_channel, RotaryCanon, RotaryTarget},
+    rotary::{build_single_channel, RotaryCanon, RotaryTarget},
     slot::{
         worker::{SlotWorkerError, SlotWorkerHandle},
         Slot,
@@ -16,29 +17,29 @@ pub struct TunRackBuilder {
 }
 
 impl TunRackBuilder {
-    pub fn add_slot<S>(mut self, slot: S) -> Self
+    pub fn add_slot<S>(mut self, slot: impl Into<S>) -> Self
     where
         S: Slot,
     {
-        self.slots.push(Box::new(slot));
+        self.slots.push(Box::new(slot.into()));
 
         self
     }
 
     pub fn build(self) -> Result<(RotaryCanon, TunRack, RotaryTarget), TunRackError> {
-        let (entry_tx, entry_rx) = build_tunrack_channel(1024);
+        let (entry_tx, entry_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
 
         let entry_tx = RotaryCanon::new(NonEmpty::new(entry_tx));
         let mut entry_rx = RotaryTarget::new(NonEmpty::new(entry_rx));
 
-        let (exit_tx, exit_rx) = build_tunrack_channel(1024);
+        let (exit_tx, exit_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
 
         let exit_tx = RotaryCanon::new(NonEmpty::new(exit_tx));
         let exit_rx = RotaryTarget::new(NonEmpty::new(exit_rx));
 
         let mut handles = Vec::new();
 
-        for slot in self.slots.into_iter() {
+        for slot in self.slots {
             let (new_entry_rx, handle) = TunRackBuilder::build_slot(entry_rx, slot, exit_tx.clone())?;
 
             entry_rx = new_entry_rx;
@@ -53,7 +54,7 @@ impl TunRackBuilder {
         mut slot: Box<dyn Slot>,
         exit_tx: RotaryCanon,
     ) -> Result<(RotaryTarget, SlotWorkerHandle), TunRackError> {
-        let (next_tx, next_rx) = build_tunrack_channel(1024);
+        let (next_tx, next_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
 
         let next_tx = RotaryCanon::new(NonEmpty::new(next_tx));
         let next_rx = RotaryTarget::new(NonEmpty::new(next_rx));

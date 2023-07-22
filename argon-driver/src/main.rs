@@ -21,14 +21,14 @@ fn main() {
         .thread_name_fn(|| {
             static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
             let id = ATOMIC_ID.fetch_add(1, Ordering::SeqCst);
-            format!("argon-{}", id)
+            format!("argon-{id}")
         })
         .build()
         .unwrap()
         .block_on(async move { run(cli).await });
 
     if let Err(e) = result {
-        println!("error: {:?}", e);
+        println!("error: {e:?}");
     }
 }
 
@@ -36,8 +36,8 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
     let mut tun = Tun::new(cli.mtu)?;
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
-        .add_slot::<AsyncSlot<_>>(PingSlotProcessor::default().into())
-        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default().into())
+        .add_slot::<AsyncSlot<_>>(PingSlotProcessor::default())
+        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default())
         .build()?;
 
     loop {
@@ -51,9 +51,7 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
             }
 
             result = rack.next() => {
-                let result = if let Some(packet) = result {
-                    packet
-                } else {
+                let Some(result) = result else {
                     return Err(TunRackError::SlotWorkerError(SlotWorkerError::SlotChannelClosed))
                 };
 

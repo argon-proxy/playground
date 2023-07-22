@@ -21,7 +21,7 @@ impl SyncSlotProcessor for LogSlotProcessor {
     }
 
     fn process(&self, data: Self::Data) -> SlotProcessResult {
-        println!("[logslot] {:?}", data);
+        println!("[logslot] {data:?}");
 
         SlotProcessResult {
             forward: vec![data],

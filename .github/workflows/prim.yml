@@ -23,6 +23,11 @@ jobs:
         run: cargo clippy --all-targets --all-features --
           -D clippy::complexity
           -D clippy::correctness
+          -D clippy::pedantic
           -D clippy::perf
           -D clippy::style
           -D clippy::suspicious
+          -A clippy::missing_errors_doc
+          -A clippy::module_name_repetitions
+          -A clippy::must-use-candidate
+          -A clippy::return_self_not_must_use
