@@ -1,6 +1,9 @@
 mod r#async;
 pub use r#async::{AsyncSlot, AsyncSlotProcessor};
 
+mod config;
+pub use config::SlotConfig;
+
 mod event;
 pub use event::SlotPacket;
 
