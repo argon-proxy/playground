@@ -2,11 +2,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use argon::{
     error::TunRackError,
-    rack::TunRack,
-    runner::{AsyncSlotRunnerConfig, SlotRunnerError, SyncSlotRunnerConfig},
+    rack::TunRackBuilder,
+    slot::{worker::SlotWorkerError, AsyncSlot, SyncSlot},
     Tun,
 };
-use argon_slots::{log::LogSlot, ping::PingAsyncSlot};
+use argon_slots::{log::LogSlotProcessor, ping::PingSlotProcessor};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
@@ -35,24 +35,18 @@ fn main() {
 async fn run(cli: Cli) -> Result<(), TunRackError> {
     let mut tun = Tun::new(cli.mtu)?;
 
-    let (mut rack, mut rack_exit_rx) = TunRack::new(cli.channel_size);
-
-    rack.add_slot(PingAsyncSlot::default(), AsyncSlotRunnerConfig::default())?;
-    rack.add_slot(LogSlot::default(), SyncSlotRunnerConfig::default())?;
+    let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
+        .add_slot::<AsyncSlot<_>>(PingSlotProcessor::default().into())
+        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default().into())
+        .build()?;
 
     loop {
         tokio::select! {
             Some(result) = tun.next() => {
                 let packet = result.map_err(TunRackError::IoError)?;
 
-                rack.send(packet).await?;
-            }
-
-            option = rack_exit_rx.recv() => {
-                if let Some(tun_packet) = option {
-                    tun.send(tun_packet).await.map_err(TunRackError::IoError)?;
-                } else {
-                    return Err(SlotRunnerError::SlotCrash.into());
+                if !entry_tx.fire(packet)? {
+                    println!("[warn] packet dropped");
                 }
             }
 
@@ -60,11 +54,20 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
                 let result = if let Some(packet) = result {
                     packet
                 } else {
-                    return Err(SlotRunnerError::SlotCrash.into());
+                    return Err(TunRackError::SlotWorkerError(SlotWorkerError::SlotChannelClosed))
                 };
 
-                // Consume any packet that goes through the tun_rack and does not get forwarded through the exit_tx
+                // Consume any packet that goes through the tun_rack and does
+                // not get forwarded through the exit_tx
                 drop(result?);
+            }
+
+            option = exit_rx.next() => {
+                if let Some(tun_packet) = option {
+                    tun.send(tun_packet).await.map_err(TunRackError::IoError)?;
+                } else {
+                    return Err(TunRackError::SlotWorkerError(SlotWorkerError::SlotChannelClosed));
+                }
             }
         }
     }

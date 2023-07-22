@@ -1,7 +1,6 @@
 use futures::Stream;
 use nonempty::NonEmpty;
-
-use crate::error::TunRackError;
+use thiserror::Error;
 
 type Packet = tun::TunPacket;
 
@@ -9,6 +8,17 @@ type IntraSlotSender = tokio::sync::mpsc::Sender<Packet>;
 type IntraSlotSyncSendError = tokio::sync::mpsc::error::TrySendError<Packet>;
 type IntraSlotReceiver = tokio::sync::mpsc::Receiver<Packet>;
 
+pub fn build_tunrack_channel(channel_size: usize) -> (IntraSlotSender, IntraSlotReceiver) {
+    tokio::sync::mpsc::channel(channel_size)
+}
+
+#[derive(Error, Debug)]
+pub enum RotaryCanonError {
+    #[error("ChannelClosed")]
+    ChannelClosed,
+}
+
+#[derive(Clone)]
 pub struct RotaryCanon {
     canons: NonEmpty<IntraSlotSender>,
     index: usize,
@@ -19,7 +29,7 @@ impl RotaryCanon {
         Self { canons, index: 0 }
     }
 
-    pub fn fire(&mut self, mut packet: Packet) -> Result<bool, TunRackError> {
+    pub fn fire(&mut self, mut packet: Packet) -> Result<bool, RotaryCanonError> {
         let index_start = self.index;
 
         while let Some(canon) = self.canons.get(self.index) {
@@ -30,7 +40,7 @@ impl RotaryCanon {
 
             packet = match send_error {
                 IntraSlotSyncSendError::Full(packet) => packet,
-                IntraSlotSyncSendError::Closed(_) => return Err(TunRackError::SlotChannelClosedError),
+                IntraSlotSyncSendError::Closed(_) => return Err(RotaryCanonError::ChannelClosed),
             };
 
             self.index = (self.index + 1) % self.canons.len();
@@ -59,7 +69,7 @@ impl RotaryTarget {
 }
 
 impl Stream for RotaryTarget {
-    type Item = Result<Packet, TunRackError>;
+    type Item = Packet;
 
     fn poll_next(
         mut self: std::pin::Pin<&mut Self>,
@@ -69,7 +79,7 @@ impl Stream for RotaryTarget {
 
         let (front, back) = self.targets.split_at_mut(index);
 
-        for (offset, target) in back.into_iter().chain(front).enumerate() {
+        for (offset, target) in back.iter_mut().chain(front).enumerate() {
             let packet_option = match target.poll_recv(cx) {
                 std::task::Poll::Ready(ready) => ready,
                 std::task::Poll::Pending => continue,
@@ -77,7 +87,7 @@ impl Stream for RotaryTarget {
 
             self.index = (self.index + offset + 1) % self.targets.len();
 
-            return std::task::Poll::Ready(Some(packet_option.ok_or(TunRackError::SlotChannelClosedError)));
+            return std::task::Poll::Ready(packet_option);
         }
 
         std::task::Poll::Pending

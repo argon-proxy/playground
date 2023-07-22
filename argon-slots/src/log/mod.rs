@@ -1,9 +1,9 @@
-use argon::slot::{SlotPacket, SlotProcessResult, SyncSlot};
+use argon::slot::{SlotPacket, SlotProcessResult, SyncSlotProcessor};
 
 #[derive(Default)]
-pub struct LogSlot {}
+pub struct LogSlotProcessor {}
 
-impl SyncSlot for LogSlot {
+impl SyncSlotProcessor for LogSlotProcessor {
     type Event = ();
     type Data = tun::TunPacket;
     type Action = ();

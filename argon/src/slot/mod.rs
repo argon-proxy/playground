@@ -1,3 +1,6 @@
+mod r#async;
+pub use r#async::*;
+
 mod event;
 pub use event::SlotPacket;
 
@@ -5,7 +8,9 @@ mod process;
 pub use process::SlotProcessResult;
 
 mod sync;
-pub use sync::SyncSlot;
+pub use sync::*;
 
-mod r#async;
-pub use r#async::AsyncSlot;
+mod traits;
+pub use traits::Slot;
+
+pub mod worker;

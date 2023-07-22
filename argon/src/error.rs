@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{rack::SlotSendError, runner::SlotRunnerError};
+use crate::{rotary::RotaryCanonError, slot::worker::SlotWorkerError};
 
 #[derive(Error, Debug)]
 pub enum TunRackError {
@@ -10,17 +10,11 @@ pub enum TunRackError {
     #[error("IoError({0})")]
     IoError(std::io::Error),
 
-    #[error("SlotChannelClosedError")]
-    SlotChannelClosedError,
-
-    #[error("SlotSendError({0})")]
-    SlotSendError(#[from] SlotSendError),
+    #[error("RotaryCanonError({0})")]
+    RotaryCanonError(#[from] RotaryCanonError),
 
     #[error("SlotRunnerError({0})")]
-    SlotRunnerError(#[from] SlotRunnerError),
-
-    #[error("SlotOverloadError")]
-    SlotOverloadError,
+    SlotWorkerError(#[from] SlotWorkerError),
 
     #[error("TokioJoinError({0})")]
     TokioJoinError(#[from] tokio::task::JoinError),
