@@ -3,7 +3,9 @@ use std::sync::Arc;
 use futures::StreamExt;
 use tokio::sync::RwLock;
 
-use super::{worker::SlotWorkerHandle, Slot, SlotPacket, SlotProcessResult};
+use super::{
+    worker::SlotWorkerHandle, Slot, SlotConfig, SlotPacket, SlotProcessResult,
+};
 use crate::{
     error::TunRackError,
     rotary::{RotaryCanon, RotaryTarget},
@@ -31,6 +33,7 @@ where
     SP: SyncSlotProcessor,
 {
     processor: Arc<RwLock<SP>>,
+    config: SlotConfig,
 }
 
 impl<SP> From<SP> for SyncSlot<SP>
@@ -40,6 +43,19 @@ where
     fn from(processor: SP) -> Self {
         Self {
             processor: Arc::new(RwLock::new(processor)),
+            config: SlotConfig::default(),
+        }
+    }
+}
+
+impl<SP> From<(SP, SlotConfig)> for SyncSlot<SP>
+where
+    SP: SyncSlotProcessor,
+{
+    fn from(pair: (SP, SlotConfig)) -> Self {
+        Self {
+            processor: Arc::new(RwLock::new(pair.0)),
+            config: pair.1,
         }
     }
 }
@@ -48,6 +64,10 @@ impl<SP> Slot for SyncSlot<SP>
 where
     SP: SyncSlotProcessor,
 {
+    fn get_config(&self) -> SlotConfig {
+        self.config
+    }
+
     fn start_worker(
         &mut self,
         mut entry_rx: RotaryTarget,

@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use argon::{
     error::TunRackError,
     rack::TunRackBuilder,
-    slot::{worker::SlotWorkerError, AsyncSlot, SyncSlot},
+    slot::{worker::SlotWorkerError, AsyncSlot, SlotConfig, SyncSlot},
     Tun,
 };
 use argon_slots::{log::LogSlotProcessor, ping::PingSlotProcessor};
@@ -37,7 +37,10 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
         .add_slot::<AsyncSlot<_>>(PingSlotProcessor::default())
-        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default())
+        .add_slot::<SyncSlot<_>>((
+            LogSlotProcessor::default(),
+            SlotConfig::default(),
+        ))
         .build()?;
 
     loop {

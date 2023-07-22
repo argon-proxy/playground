@@ -4,7 +4,9 @@ use async_trait::async_trait;
 use futures::StreamExt;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use super::{worker::SlotWorkerHandle, Slot, SlotPacket, SlotProcessResult};
+use super::{
+    worker::SlotWorkerHandle, Slot, SlotConfig, SlotPacket, SlotProcessResult,
+};
 use crate::{
     error::TunRackError,
     rotary::{RotaryCanon, RotaryTarget},
@@ -42,6 +44,7 @@ where
     SP: AsyncSlotProcessor,
 {
     processor: Arc<RwLock<SP>>,
+    config: SlotConfig,
 }
 
 impl<SP> From<SP> for AsyncSlot<SP>
@@ -51,6 +54,19 @@ where
     fn from(processor: SP) -> Self {
         Self {
             processor: Arc::new(RwLock::new(processor)),
+            config: SlotConfig::default(),
+        }
+    }
+}
+
+impl<SP> From<(SP, SlotConfig)> for AsyncSlot<SP>
+where
+    SP: AsyncSlotProcessor,
+{
+    fn from(pair: (SP, SlotConfig)) -> Self {
+        Self {
+            processor: Arc::new(RwLock::new(pair.0)),
+            config: pair.1,
         }
     }
 }
@@ -59,6 +75,10 @@ impl<SP> Slot for AsyncSlot<SP>
 where
     SP: AsyncSlotProcessor,
 {
+    fn get_config(&self) -> SlotConfig {
+        self.config
+    }
+
     fn start_worker(
         &mut self,
         mut entry_rx: RotaryTarget,
