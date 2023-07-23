@@ -65,7 +65,7 @@ where
     SP: SyncSlotProcessor,
 {
     fn get_config(&self) -> SlotConfig {
-        self.config
+        self.config.clone()
     }
 
     fn start_worker(
@@ -75,6 +75,7 @@ where
         mut exit_tx: RotaryCanon,
     ) -> Result<SlotWorkerHandle, TunRackError> {
         let processor = self.processor.clone();
+        let config = self.config.clone();
 
         let handle = tokio::spawn(async move {
             while let Some(tun_packet) = entry_rx.next().await {
@@ -87,7 +88,7 @@ where
                     Ok(packet) => packet,
                     Err(tun_packet) => {
                         if !next_tx.fire(tun_packet)? {
-                            println!("[warn] dropped packet");
+                            println!("[{}][warn] dropped packet", config.name);
                         }
 
                         continue;
@@ -114,7 +115,10 @@ where
                                     action,
                                 ),
                             )? {
-                                println!("[warn] dropped packet");
+                                println!(
+                                    "[{}][warn] dropped packet",
+                                    config.name
+                                );
                             }
                         }
                     },
@@ -126,13 +130,19 @@ where
 
                         for forward in result.forward {
                             if !next_tx.fire(forward)? {
-                                println!("[warn] dropped packet");
+                                println!(
+                                    "[{}][warn] dropped packet",
+                                    config.name
+                                );
                             }
                         }
 
                         for exit in result.exit {
                             if !exit_tx.fire(exit)? {
-                                println!("[warn] dropped packet");
+                                println!(
+                                    "[{}][warn] dropped packet",
+                                    config.name
+                                );
                             }
                         }
                     },
