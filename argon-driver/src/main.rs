@@ -36,11 +36,11 @@ async fn run(cli: Cli) -> Result<(), TunRackError> {
     let mut tun = Tun::new(cli.mtu)?;
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
-        .add_slot::<AsyncSlot<_>>(PingSlotProcessor::default())
-        .add_slot::<SyncSlot<_>>((
-            LogSlotProcessor::default(),
-            SlotConfig::default(),
+        .add_slot::<AsyncSlot<_>>((
+            PingSlotProcessor::default(),
+            SlotConfig::default().set_name("pingslot".to_owned()),
         ))
+        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default())
         .build()?;
 
     loop {

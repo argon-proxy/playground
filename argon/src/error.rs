@@ -18,4 +18,7 @@ pub enum TunRackError {
 
     #[error("TunError({0})")]
     TunError(#[from] tun::Error),
+
+    #[error("InternalError")]
+    InternalError,
 }

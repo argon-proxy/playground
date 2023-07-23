@@ -20,7 +20,7 @@ pub enum RotaryCanonError {
     ChannelClosed,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RotaryCanon {
     canons: NonEmpty<IntraSlotSender>,
     index: usize,
@@ -29,6 +29,11 @@ pub struct RotaryCanon {
 impl RotaryCanon {
     pub fn new(canons: NonEmpty<IntraSlotSender>) -> Self {
         Self { canons, index: 0 }
+    }
+
+    pub fn add(&mut self, canon: IntraSlotSender) {
+        self.canons.push(canon);
+        self.index = 0;
     }
 
     pub fn fire(
@@ -61,6 +66,7 @@ impl RotaryCanon {
     }
 }
 
+#[derive(Debug)]
 pub struct RotaryTarget {
     targets: Vec<IntraSlotReceiver>,
     index: usize,
@@ -72,6 +78,10 @@ impl RotaryTarget {
             targets: targets.into(),
             index: 0,
         }
+    }
+    pub fn add(&mut self, target: IntraSlotReceiver) {
+        self.targets.push(target);
+        self.index = 0;
     }
 }
 
