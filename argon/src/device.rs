@@ -1,34 +1,37 @@
 use futures::{Sink, SinkExt, Stream, StreamExt};
 use tokio_util::codec::Framed;
 
+use crate::config::ArgonTunConfig;
+
 pub struct Tun {
     frame: Framed<tun::AsyncDevice, tun::TunPacketCodec>,
     config: tun::Configuration,
 }
 
 impl Tun {
-    pub fn new(mtu: Option<u16>) -> Result<Self, tun::Error> {
-        let mut config = tun::Configuration::default();
+    pub fn new(config: ArgonTunConfig) -> Result<Self, tun::Error> {
+        let mut tun_config = tun::Configuration::default();
 
-        if let Some(mtu) = mtu {
-            config.mtu(mtu.into());
-        }
+        tun_config.mtu(config.mtu.into());
 
-        config
+        tun_config
             .address((10, 0, 0, 1))
             .netmask((255, 255, 255, 0))
             .up();
 
         #[cfg(target_os = "linux")]
-        config.platform(|config| {
+        tun_config.platform(|config| {
             config.packet_information(true);
         });
 
-        let device = tun::create_as_async(&config)?;
+        let device = tun::create_as_async(&tun_config)?;
 
         let frame = device.into_framed();
 
-        Ok(Self { frame, config })
+        Ok(Self {
+            frame,
+            config: tun_config,
+        })
     }
 }
 
@@ -77,11 +80,12 @@ impl Sink<tun::TunPacket> for Tun {
 
 #[cfg(test)]
 mod tests {
-    use crate::Tun;
+    use crate::{config::ArgonTunConfig, Tun};
+
     #[ignore]
     #[tokio::test]
     async fn create_tun_test() {
-        let argon_tun = Tun::new(None);
+        let argon_tun = Tun::new(ArgonTunConfig::default());
 
         assert!(argon_tun.is_ok());
     }

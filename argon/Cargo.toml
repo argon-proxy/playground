@@ -12,6 +12,8 @@ itertools = { workspace = true }
 nonempty = { workspace = true }
 num_cpus = { workspace = true }
 packet = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }

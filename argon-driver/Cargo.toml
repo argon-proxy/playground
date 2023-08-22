@@ -9,4 +9,6 @@ argon-slots = { path = "../argon-slots" }
 
 clap = { workspace = true, features = ["derive"] }
 futures = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+toml = { workspace = true }

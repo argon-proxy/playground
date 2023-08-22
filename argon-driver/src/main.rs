@@ -1,6 +1,12 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use argon::{
+    config::{
+        ArgonConfig, ArgonRackConfig, ArgonSlotLayoutConfig, ArgonTunConfig,
+    },
     error::TunRackError,
     rack::TunRackBuilder,
     slot::{worker::SlotWorkerError, AsyncSlot, SlotConfig, SyncSlot},
@@ -16,6 +22,14 @@ use cli::Cli;
 fn main() {
     let cli = Cli::parse();
 
+    let config = if let Some(config_file) = cli.config {
+        let file = std::fs::read(config_file).unwrap();
+
+        serde_json::from_slice(&file).unwrap()
+    } else {
+        ArgonConfig::default()
+    };
+
     let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name_fn(|| {
@@ -25,15 +39,15 @@ fn main() {
         })
         .build()
         .unwrap()
-        .block_on(async move { run(cli).await });
+        .block_on(async move { run(config).await });
 
     if let Err(e) = result {
         println!("error: {e:?}");
     }
 }
 
-async fn run(cli: Cli) -> Result<(), TunRackError> {
-    let mut tun = Tun::new(cli.mtu)?;
+async fn run(config: ArgonConfig) -> Result<(), TunRackError> {
+    let mut tun = Tun::new(config.tun)?;
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
         .add_slot::<AsyncSlot<_>>((
