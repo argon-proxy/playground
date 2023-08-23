@@ -1,0 +1,47 @@
+{
+  "tun": {
+    "mtu": 1480
+  },
+  "rack": {
+    "channel_size": 1024,
+    "layout": [
+      {
+        "slot": "firewall"
+      },
+      {
+        "slot": "wireguard",
+        "sink": true,
+        "subslots": [
+          {
+            "slot": "dns_cache"
+          },
+          {
+            "slot": "dns_redir"
+          },
+          {
+            "slot": "udp2tcp"
+          },
+          {
+            "slot": "metrics"
+          }
+        ]
+      },
+      {
+        "slot": "reverseproxy",
+        "subslots": [
+          {
+            "slot": "http_gzip"
+          }
+        ]
+      }
+    ]
+  },
+  "slots": {
+    "firewall": {
+      "plugin": "argon/firewall",
+      "runtime": "sync",
+      "workers": 1,
+      "config": {}
+    }
+  }
+}

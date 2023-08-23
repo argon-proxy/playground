@@ -30,6 +30,8 @@ fn main() {
         ArgonConfig::default()
     };
 
+    println!("config: {}", serde_json::to_string_pretty(&config).unwrap());
+
     let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name_fn(|| {

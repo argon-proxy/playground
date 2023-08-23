@@ -30,6 +30,9 @@ pub struct ArgonRackConfig {
 pub struct ArgonSlotLayoutConfig {
     pub slot: String,
 
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sink: bool,
+
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub subslots: Vec<Self>,
 }
@@ -45,7 +48,31 @@ impl Default for ArgonRackConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ArgonSlotConfig {
-    #[serde(rename = "type")]
-    slot_type: String,
+    plugin: String,
+
+    #[serde(default, skip_serializing_if = "ArgonRuntimeType::is_sync")]
+    runtime: ArgonRuntimeType,
+
     workers: usize,
+
+    #[serde(default, skip_serializing_if = "serde_json::Value::is_null")]
+    config: serde_json::Value,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ArgonRuntimeType {
+    #[default]
+    Sync,
+
+    Async,
+}
+
+impl ArgonRuntimeType {
+    fn is_sync(&self) -> bool {
+        match self {
+            Self::Sync => true,
+            Self::Async => false,
+        }
+    }
 }
