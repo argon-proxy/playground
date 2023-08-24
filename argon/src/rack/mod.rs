@@ -3,13 +3,16 @@ use gcd::euclid_usize;
 use itertools::{multizip, Itertools};
 use nonempty::NonEmpty;
 
+mod layout;
+pub use layout::{TunRackSlot, TunRackLayoutError};
+
 use crate::{
     constants::INTRA_SLOT_CHANNEL_SIZE,
     error::TunRackError,
     rotary::{build_single_channel, RotaryCanon, RotaryTarget},
     slot::{
         worker::{SlotWorkerError, SlotWorkerHandle},
-        Slot,
+        AsyncSlot, AsyncSlotProcessor, Slot, SyncSlot, SyncSlotProcessor,
     },
 };
 
@@ -19,11 +22,26 @@ pub struct TunRackBuilder {
 }
 
 impl TunRackBuilder {
-    pub fn add_slot<S>(mut self, slot: impl Into<S>) -> Self
+    pub fn add_sync_slot<SP>(
+        mut self,
+        slot: impl Into<Box<SyncSlot<SP>>>,
+    ) -> Self
     where
-        S: Slot,
+        SP: SyncSlotProcessor,
     {
-        self.slots.push(Box::new(slot.into()));
+        self.slots.push(slot.into());
+
+        self
+    }
+
+    pub fn add_async_slot<SP>(
+        mut self,
+        slot: impl Into<Box<AsyncSlot<SP>>>,
+    ) -> Self
+    where
+        SP: AsyncSlotProcessor,
+    {
+        self.slots.push(slot.into());
 
         self
     }

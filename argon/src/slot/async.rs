@@ -59,6 +59,15 @@ where
     }
 }
 
+impl<SP> From<SP> for Box<AsyncSlot<SP>>
+where
+    SP: AsyncSlotProcessor,
+{
+    fn from(processor: SP) -> Self {
+        Box::new(Into::<AsyncSlot<SP>>::into(processor))
+    }
+}
+
 impl<SP> From<(SP, SlotConfig)> for AsyncSlot<SP>
 where
     SP: AsyncSlotProcessor,
@@ -68,6 +77,15 @@ where
             processor: Arc::new(RwLock::new(pair.0)),
             config: pair.1,
         }
+    }
+}
+
+impl<SP> From<(SP, SlotConfig)> for Box<AsyncSlot<SP>>
+where
+    SP: AsyncSlotProcessor,
+{
+    fn from(pair: (SP, SlotConfig)) -> Self {
+        Box::new(Into::<AsyncSlot<SP>>::into(pair))
     }
 }
 

@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use crate::{rotary::RotaryCanonError, slot::worker::SlotWorkerError};
+use crate::{
+    rack::TunRackLayoutError, rotary::RotaryCanonError,
+    slot::worker::SlotWorkerError,
+};
 
 #[derive(Error, Debug)]
 pub enum TunRackError {
@@ -18,6 +21,9 @@ pub enum TunRackError {
 
     #[error("TunError({0})")]
     TunError(#[from] tun::Error),
+
+    #[error(transparent)]
+    TunRackLayoutError(#[from] TunRackLayoutError),
 
     #[error("InternalError")]
     InternalError,

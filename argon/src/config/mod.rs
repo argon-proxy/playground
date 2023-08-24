@@ -23,11 +23,11 @@ impl Default for ArgonTunConfig {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ArgonRackConfig {
     pub channel_size: usize,
-    pub layout: Vec<ArgonSlotLayoutConfig>,
+    pub layout: Vec<ArgonRackSlotConfig>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ArgonSlotLayoutConfig {
+pub struct ArgonRackSlotConfig {
     pub slot: String,
 
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -48,15 +48,15 @@ impl Default for ArgonRackConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ArgonSlotConfig {
-    plugin: String,
+    pub plugin: String,
 
     #[serde(default, skip_serializing_if = "ArgonRuntimeType::is_sync")]
-    runtime: ArgonRuntimeType,
+    pub runtime: ArgonRuntimeType,
 
-    workers: usize,
+    pub workers: usize,
 
     #[serde(default, skip_serializing_if = "serde_json::Value::is_null")]
-    config: serde_json::Value,
+    pub config: serde_json::Value,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]

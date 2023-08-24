@@ -1,14 +1,9 @@
-use std::{
-    collections::HashMap,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use argon::{
-    config::{
-        ArgonConfig, ArgonRackConfig, ArgonSlotLayoutConfig, ArgonTunConfig,
-    },
+    config::ArgonConfig,
     error::TunRackError,
-    rack::TunRackBuilder,
+    rack::{TunRackBuilder, TunRackSlot},
     slot::{worker::SlotWorkerError, AsyncSlot, SlotConfig, SyncSlot},
     Tun,
 };
@@ -51,12 +46,18 @@ fn main() {
 async fn run(config: ArgonConfig) -> Result<(), TunRackError> {
     let mut tun = Tun::new(config.tun)?;
 
+    let rack_layout = TunRackSlot::build(config.rack.layout, config.slots)?;
+
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
-        .add_slot::<AsyncSlot<_>>((
+        .add_async_slot((
             PingSlotProcessor::default(),
             SlotConfig::default().set_name("pingslot".to_owned()),
         ))
-        .add_slot::<SyncSlot<_>>(LogSlotProcessor::default())
+        .add_async_slot((
+            PingSlotProcessor::default(),
+            SlotConfig::default().set_name("pingslot".to_owned()),
+        ))
+        .add_sync_slot(LogSlotProcessor::default())
         .build()?;
 
     loop {
