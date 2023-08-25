@@ -28,6 +28,14 @@ pub trait SyncSlotProcessor: Send + Sync + 'static {
     fn process(&self, data: Self::Data) -> SlotProcessResult;
 }
 
+pub type AbiSyncSlotProcessor = Box<
+    dyn SyncSlotProcessor<
+        Event = dyn Send + Sync,
+        Data = dyn Send + Sync,
+        Action = dyn Send + Sync,
+    >,
+>;
+
 pub struct SyncSlot<SP>
 where
     SP: SyncSlotProcessor,

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures::StreamExt;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tokio::sync::RwLock;
 
 use super::{
     worker::SlotWorkerHandle, Slot, SlotConfig, SlotPacket, SlotProcessResult,
@@ -18,26 +18,25 @@ pub trait AsyncSlotProcessor: Send + Sync + 'static {
     type Data: Send + Sync;
     type Action: Send + Sync;
 
-    async fn deserialize<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
+    async fn deserialize(
+        &self,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
 
-    async fn handle_event<'p>(
-        slot: &mut RwLockWriteGuard<'p, Self>,
-        event: Self::Event,
-    ) -> Vec<Self::Action>;
+    async fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action>;
 
-    async fn serialize<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
-        action: Self::Action,
-    ) -> tun::TunPacket;
+    async fn serialize(&self, action: Self::Action) -> tun::TunPacket;
 
-    async fn process<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
-        data: Self::Data,
-    ) -> SlotProcessResult;
+    async fn process(&self, data: Self::Data) -> SlotProcessResult;
 }
+
+pub type AbiAsyncSlotProcessor = Box<
+    dyn AsyncSlotProcessor<
+        Event = dyn Send + Sync,
+        Data = dyn Send + Sync,
+        Action = dyn Send + Sync,
+    >,
+>;
 
 pub struct AsyncSlot<SP>
 where

@@ -4,7 +4,7 @@ use itertools::{multizip, Itertools};
 use nonempty::NonEmpty;
 
 mod layout;
-pub use layout::{TunRackSlot, TunRackLayoutError};
+pub use layout::{TunRackLayoutError, TunRackSlot};
 
 use crate::{
     constants::INTRA_SLOT_CHANNEL_SIZE,

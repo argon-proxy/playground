@@ -3,7 +3,6 @@ use argon::slot::{
 };
 use async_trait::async_trait;
 use packet::{Builder, Packet};
-use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Default)]
 pub struct PingSlotProcessor {}
@@ -86,31 +85,22 @@ impl AsyncSlotProcessor for PingSlotProcessor {
     );
     type Action = ();
 
-    async fn deserialize<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
+    async fn deserialize(
+        &self,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        <Self as SyncSlotProcessor>::deserialize(slot, packet)
+        <Self as SyncSlotProcessor>::deserialize(&self, packet)
     }
 
-    async fn handle_event<'p>(
-        slot: &mut RwLockWriteGuard<'p, Self>,
-        event: Self::Event,
-    ) -> Vec<Self::Action> {
-        <Self as SyncSlotProcessor>::handle_event(slot, event)
+    async fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action> {
+        <Self as SyncSlotProcessor>::handle_event(&mut self, event)
     }
 
-    async fn serialize<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
-        action: Self::Action,
-    ) -> tun::TunPacket {
-        <Self as SyncSlotProcessor>::serialize(slot, action)
+    async fn serialize(&self, action: Self::Action) -> tun::TunPacket {
+        <Self as SyncSlotProcessor>::serialize(&self, action)
     }
 
-    async fn process<'p>(
-        slot: &RwLockReadGuard<'p, Self>,
-        data: Self::Data,
-    ) -> SlotProcessResult {
-        <Self as SyncSlotProcessor>::process(slot, data)
+    async fn process(&self, data: Self::Data) -> SlotProcessResult {
+        <Self as SyncSlotProcessor>::process(&self, data)
     }
 }
