@@ -3,8 +3,8 @@ use std::{
     ffi::OsStr,
 };
 
-use argon::slot::{AbiAsyncSlotProcessor, AbiSyncSlotProcessor};
 use argon_plugin::ArgonPlugin;
+use argon_slot::{AbiAsyncSlotProcessor, AbiSyncSlotProcessor};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -20,33 +20,35 @@ pub enum ArgonPluginRegistryError {
 
     #[error("PluginCannotBuildAsyncSlot")]
     PluginCannotBuildAsyncSlot,
+
+    #[error("InvalidPlugin")]
+    InvalidPlugin(libloading::Error),
+
+    #[error("PluginCouldNotBeLoaded")]
+    PluginCouldNotBeLoaded(libloading::Error),
 }
 
+#[derive(Default)]
 pub struct ArgonPluginRegistry {
     plugins: HashMap<String, Box<dyn ArgonPlugin>>,
     libs: Vec<libloading::Library>,
 }
 
 impl ArgonPluginRegistry {
-    pub fn new() -> Self {
-        Self {
-            plugins: HashMap::new(),
-            libs: Vec::new(),
-        }
-    }
-
-    pub unsafe fn load_plugin<P: AsRef<OsStr>>(
+    pub fn load_plugin<P: AsRef<OsStr>>(
         &mut self,
         filename: P,
     ) -> Result<(), ArgonPluginRegistryError> {
         type ArgonPluginCreate = unsafe fn() -> *mut dyn ArgonPlugin;
 
-        let lib = libloading::Library::new(filename.as_ref()).unwrap();
+        let lib = unsafe { libloading::Library::new(filename.as_ref()) }
+            .map_err(ArgonPluginRegistryError::PluginCouldNotBeLoaded)?;
 
         let plugin_constructor: libloading::Symbol<ArgonPluginCreate> =
-            lib.get(b"_argon_plugin_create").unwrap();
+            unsafe { lib.get(b"_argon_plugin_create") }
+                .map_err(ArgonPluginRegistryError::InvalidPlugin)?;
 
-        let plugin = Box::from_raw(plugin_constructor());
+        let plugin = unsafe { Box::from_raw(plugin_constructor()) };
         let plugin_name = plugin.name();
 
         match self.plugins.entry(plugin_name.to_owned()) {

@@ -91,27 +91,61 @@ dependencies = [
 name = "argon-plugin"
 version = "0.1.0"
 dependencies = [
- "argon",
+ "argon-slot",
 ]
 
 [[package]]
 name = "argon-plugin-registry"
 version = "0.1.0"
 dependencies = [
- "argon",
  "argon-plugin",
+ "argon-slot",
  "libloading",
  "thiserror",
 ]
 
 [[package]]
-name = "argon-slots"
+name = "argon-rack"
+version = "0.1.0"
+dependencies = [
+ "argon",
+ "argon-slot",
+ "futures",
+ "gcd",
+ "itertools",
+ "nonempty",
+ "thiserror",
+ "tokio",
+ "tun",
+]
+
+[[package]]
+name = "argon-slot"
 version = "0.1.0"
 dependencies = [
  "argon",
  "async-trait",
- "packet",
+ "futures",
+ "thiserror",
  "tokio",
+ "tun",
+]
+
+[[package]]
+name = "argon-slot-log"
+version = "0.1.0"
+dependencies = [
+ "argon-slot",
+ "tun",
+]
+
+[[package]]
+name = "argon-slot-ping"
+version = "0.1.0"
+dependencies = [
+ "argon-slot",
+ "async-trait",
+ "packet",
  "tun",
 ]
 
@@ -120,10 +154,14 @@ name = "argon-tun"
 version = "0.1.0"
 dependencies = [
  "argon",
- "argon-slots",
+ "argon-rack",
+ "argon-slot",
+ "argon-slot-log",
+ "argon-slot-ping",
  "clap",
  "futures",
  "serde_json",
+ "thiserror",
  "tokio",
  "toml",
 ]

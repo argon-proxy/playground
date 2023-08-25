@@ -1,4 +1,4 @@
-pub struct SlotProcessResult {
+pub struct SlotProcessorResult {
     pub forward: Vec<tun::TunPacket>,
     pub exit: Vec<tun::TunPacket>,
 }

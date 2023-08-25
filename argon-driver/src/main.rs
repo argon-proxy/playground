@@ -1,18 +1,18 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use argon::{
-    config::ArgonConfig,
-    error::TunRackError,
-    rack::{TunRackBuilder, TunRackSlot},
-    slot::{worker::SlotWorkerError, AsyncSlot, SlotConfig, SyncSlot},
-    Tun,
-};
-use argon_slots::{log::LogSlotProcessor, ping::PingSlotProcessor};
+use argon::{config::ArgonConfig, ArgonTun};
+use argon_rack::{TunRackBuilder, TunRackSlot};
+use argon_slot::SlotConfig;
+use argon_slot_log::LogSlotProcessor;
+use argon_slot_ping::PingSlotProcessor;
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
 mod cli;
 use cli::Cli;
+
+mod error;
+use error::ArgonDriverError;
 
 fn main() {
     let cli = Cli::parse();
@@ -43,10 +43,10 @@ fn main() {
     }
 }
 
-async fn run(config: ArgonConfig) -> Result<(), TunRackError> {
-    let mut tun = Tun::new(config.tun)?;
+async fn run(config: ArgonConfig) -> Result<(), ArgonDriverError> {
+    let mut tun = ArgonTun::new(config.tun)?;
 
-    let rack_layout = TunRackSlot::build(config.rack.layout, config.slots)?;
+    let rack_layout = TunRackSlot::build(config.rack.layout)?;
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
         .add_async_slot((
@@ -63,16 +63,16 @@ async fn run(config: ArgonConfig) -> Result<(), TunRackError> {
     loop {
         tokio::select! {
             Some(result) = tun.next() => {
-                let packet = result.map_err(TunRackError::IoError)?;
+                let packet = result.map_err(ArgonDriverError::IoError)?;
 
-                if !entry_tx.fire(packet)? {
+                if !entry_tx.fire(packet).map_err(|_| ArgonDriverError::RackChannelClosed)? {
                     println!("[warn] packet dropped");
                 }
             }
 
             result = rack.next() => {
                 let Some(result) = result else {
-                    return Err(TunRackError::SlotWorkerError(SlotWorkerError::SlotChannelClosed))
+                    return Err(ArgonDriverError::RackChannelClosed);
                 };
 
                 // Consume any packet that goes through the tun_rack and does
@@ -82,9 +82,9 @@ async fn run(config: ArgonConfig) -> Result<(), TunRackError> {
 
             option = exit_rx.next() => {
                 if let Some(tun_packet) = option {
-                    tun.send(tun_packet).await.map_err(TunRackError::IoError)?;
+                    tun.send(tun_packet).await.map_err(ArgonDriverError::IoError)?;
                 } else {
-                    return Err(TunRackError::SlotWorkerError(SlotWorkerError::SlotChannelClosed));
+                    return Err(ArgonDriverError::RackChannelClosed);
                 }
             }
         }

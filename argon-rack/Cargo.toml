@@ -1,0 +1,16 @@
+[package]
+name = "argon-rack"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon = { path = "../argon" }
+argon-slot = { path = "../argon-slot" }
+
+futures = { workspace = true }
+gcd = { workspace = true }
+itertools = { workspace = true }
+nonempty = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tun = { workspace = true }

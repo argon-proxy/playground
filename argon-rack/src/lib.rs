@@ -1,20 +1,22 @@
+use argon::rotary::{build_single_channel, RotaryCanon, RotaryTarget};
+use argon_slot::{
+    processor::{r#async::AsyncSlotProcessor, sync::SyncSlotProcessor},
+    worker::SlotWorkerHandle,
+    AsyncSlot, Slot, SyncSlot,
+};
 use futures::{FutureExt, Stream, StreamExt};
 use gcd::euclid_usize;
 use itertools::{multizip, Itertools};
 use nonempty::NonEmpty;
 
+mod constants;
+use constants::INTRA_SLOT_CHANNEL_SIZE;
+
+mod error;
+pub use error::TunRackError;
+
 mod layout;
 pub use layout::{TunRackLayoutError, TunRackSlot};
-
-use crate::{
-    constants::INTRA_SLOT_CHANNEL_SIZE,
-    error::TunRackError,
-    rotary::{build_single_channel, RotaryCanon, RotaryTarget},
-    slot::{
-        worker::{SlotWorkerError, SlotWorkerHandle},
-        AsyncSlot, AsyncSlotProcessor, Slot, SyncSlot, SyncSlotProcessor,
-    },
-};
 
 #[derive(Default)]
 pub struct TunRackBuilder {
@@ -159,19 +161,18 @@ impl Stream for TunRack {
     ) -> std::task::Poll<Option<Self::Item>> {
         if let std::task::Poll::Ready(option) = self.target.poll_next_unpin(cx)
         {
-            return std::task::Poll::Ready(Some(option.ok_or(
-                TunRackError::SlotWorkerError(
-                    SlotWorkerError::SlotChannelClosed,
-                ),
-            )));
+            return std::task::Poll::Ready(Some(
+                option.ok_or(TunRackError::SlotChannelClosed),
+            ));
         }
 
         for slot in &mut self.handles {
             if let std::task::Poll::Ready(result) = slot.handle.poll_unpin(cx) {
                 return std::task::Poll::Ready(Some(Err(match result {
-                    Ok(item) => {
-                        item.err().unwrap_or(SlotWorkerError::SlotCrash).into()
-                    },
+                    Ok(item) => item.err().map_or(
+                        TunRackError::SlotCrash,
+                        TunRackError::SlotWorkerError,
+                    ),
                     Err(e) => TunRackError::TokioJoinError(e),
                 })));
             }

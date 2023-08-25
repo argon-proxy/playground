@@ -1,15 +1,16 @@
 use futures::{Sink, SinkExt, Stream, StreamExt};
 use tokio_util::codec::Framed;
 
-use crate::config::ArgonTunConfig;
+use crate::{config::ArgonTunConfig, ArgonTunError};
 
-pub struct Tun {
+pub struct ArgonTun {
     frame: Framed<tun::AsyncDevice, tun::TunPacketCodec>,
-    config: tun::Configuration,
+    tun_config: tun::Configuration,
+    argon_config: ArgonTunConfig,
 }
 
-impl Tun {
-    pub fn new(config: ArgonTunConfig) -> Result<Self, tun::Error> {
+impl ArgonTun {
+    pub fn new(config: ArgonTunConfig) -> Result<Self, ArgonTunError> {
         let mut tun_config = tun::Configuration::default();
 
         tun_config.mtu(config.mtu.into());
@@ -30,12 +31,13 @@ impl Tun {
 
         Ok(Self {
             frame,
-            config: tun_config,
+            tun_config,
+            argon_config: config,
         })
     }
 }
 
-impl Stream for Tun {
+impl Stream for ArgonTun {
     type Item = Result<tun::TunPacket, std::io::Error>;
 
     fn poll_next(
@@ -46,7 +48,7 @@ impl Stream for Tun {
     }
 }
 
-impl Sink<tun::TunPacket> for Tun {
+impl Sink<tun::TunPacket> for ArgonTun {
     type Error = std::io::Error;
 
     fn poll_ready(
@@ -80,12 +82,12 @@ impl Sink<tun::TunPacket> for Tun {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::ArgonTunConfig, Tun};
+    use crate::{config::ArgonTunConfig, ArgonTun};
 
     #[ignore]
     #[tokio::test]
     async fn create_tun_test() {
-        let argon_tun = Tun::new(ArgonTunConfig::default());
+        let argon_tun = ArgonTun::new(ArgonTunConfig::default());
 
         assert!(argon_tun.is_ok());
     }

@@ -1,5 +1,5 @@
 [package]
-name = "argon-slots"
+name = "argon-slot"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,7 @@ edition = "2021"
 argon = { path = "../argon" }
 
 async-trait = { workspace = true }
-packet = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tun = { workspace = true }

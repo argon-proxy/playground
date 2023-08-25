@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-argon = { path = "../argon" }
+argon-slot = { path = "../argon-slot" }
 argon-plugin = { path = "../argon-plugin" }
 
 libloading = { workspace = true }

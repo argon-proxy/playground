@@ -1,4 +1,4 @@
-use argon::slot::{AbiAsyncSlotProcessor, AbiSyncSlotProcessor};
+use argon_slot::{AbiAsyncSlotProcessor, AbiSyncSlotProcessor};
 
 pub trait ArgonPlugin: Send + Sync {
     fn name(&self) -> &'static str;

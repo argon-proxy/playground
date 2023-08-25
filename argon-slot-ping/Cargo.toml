@@ -1,0 +1,11 @@
+[package]
+name = "argon-slot-ping"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon-slot = { path = "../argon-slot" }
+
+async-trait = { workspace = true }
+packet = { workspace = true }
+tun = { workspace = true }

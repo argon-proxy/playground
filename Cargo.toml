@@ -1,10 +1,13 @@
 [workspace]
 members = [
     "argon",
-    "argon-slots",
     "argon-driver",
     "argon-plugin",
-    "argon-plugin-registry"
+    "argon-plugin-registry",
+    "argon-rack",
+    "argon-slot",
+    "argon-slot-ping",
+    "argon-slot-log",
 ]
 
 [workspace.dependencies]

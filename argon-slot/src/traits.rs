@@ -1,8 +1,7 @@
+use argon::rotary::{RotaryCanon, RotaryTarget};
+
 use super::{worker::SlotWorkerHandle, SlotConfig};
-use crate::{
-    error::TunRackError,
-    rotary::{RotaryCanon, RotaryTarget},
-};
+use crate::ArgonSlotError;
 
 pub trait Slot: 'static {
     fn get_config(&self) -> SlotConfig;
@@ -12,5 +11,5 @@ pub trait Slot: 'static {
         entry_rx: RotaryTarget,
         next_tx: RotaryCanon,
         exit_tx: RotaryCanon,
-    ) -> Result<SlotWorkerHandle, TunRackError>;
+    ) -> Result<SlotWorkerHandle, ArgonSlotError>;
 }

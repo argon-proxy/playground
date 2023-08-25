@@ -1,4 +1,6 @@
-use argon::slot::{SlotPacket, SlotProcessResult, SyncSlotProcessor};
+use argon_slot::processor::{
+    sync::SyncSlotProcessor, SlotPacket, SlotProcessorResult,
+};
 
 #[derive(Default)]
 pub struct LogSlotProcessor {}
@@ -23,10 +25,10 @@ impl SyncSlotProcessor for LogSlotProcessor {
         unreachable!()
     }
 
-    fn process(&self, data: Self::Data) -> SlotProcessResult {
+    fn process(&self, data: Self::Data) -> SlotProcessorResult {
         println!("[logslot] {data:?}");
 
-        SlotProcessResult {
+        SlotProcessorResult {
             forward: vec![data],
             exit: vec![],
         }

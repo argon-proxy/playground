@@ -5,10 +5,14 @@ edition = "2021"
 
 [dependencies]
 argon = { path = "../argon" }
-argon-slots = { path = "../argon-slots" }
+argon-slot = { path = "../argon-slot" }
+argon-rack = { path = "../argon-rack" }
+argon-slot-log = { path = "../argon-slot-log" }
+argon-slot-ping = { path = "../argon-slot-ping" }
 
 clap = { workspace = true, features = ["derive"] }
 futures = { workspace = true }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 toml = { workspace = true }

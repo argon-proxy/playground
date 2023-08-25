@@ -1,10 +1,9 @@
-mod constants;
+pub mod config;
 
 mod device;
-pub use device::Tun;
+pub use device::ArgonTun;
 
-pub mod config;
-pub mod error;
-pub mod rack;
+mod error;
+pub use error::ArgonTunError;
+
 pub mod rotary;
-pub mod slot;

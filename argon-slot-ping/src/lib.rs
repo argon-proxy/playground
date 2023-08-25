@@ -1,5 +1,6 @@
-use argon::slot::{
-    AsyncSlotProcessor, SlotPacket, SlotProcessResult, SyncSlotProcessor,
+use argon_slot::processor::{
+    r#async::AsyncSlotProcessor, sync::SyncSlotProcessor, SlotPacket,
+    SlotProcessorResult,
 };
 use async_trait::async_trait;
 use packet::{Builder, Packet};
@@ -44,8 +45,8 @@ impl SyncSlotProcessor for PingSlotProcessor {
         unreachable!()
     }
 
-    fn process(&self, data: Self::Data) -> SlotProcessResult {
-        SlotProcessResult {
+    fn process(&self, data: Self::Data) -> SlotProcessorResult {
+        SlotProcessorResult {
             forward: vec![],
             exit: vec![tun::TunPacket::new(
                 packet::ip::v4::Builder::default()
@@ -89,18 +90,18 @@ impl AsyncSlotProcessor for PingSlotProcessor {
         &self,
         packet: tun::TunPacket,
     ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        <Self as SyncSlotProcessor>::deserialize(&self, packet)
+        <Self as SyncSlotProcessor>::deserialize(self, packet)
     }
 
     async fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action> {
-        <Self as SyncSlotProcessor>::handle_event(&mut self, event)
+        <Self as SyncSlotProcessor>::handle_event(self, event)
     }
 
     async fn serialize(&self, action: Self::Action) -> tun::TunPacket {
-        <Self as SyncSlotProcessor>::serialize(&self, action)
+        <Self as SyncSlotProcessor>::serialize(self, action)
     }
 
-    async fn process(&self, data: Self::Data) -> SlotProcessResult {
-        <Self as SyncSlotProcessor>::process(&self, data)
+    async fn process(&self, data: Self::Data) -> SlotProcessorResult {
+        <Self as SyncSlotProcessor>::process(self, data)
     }
 }

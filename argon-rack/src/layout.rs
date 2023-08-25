@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use thiserror::Error;
-
-use crate::{
-    config::{ArgonRackSlotConfig, ArgonSlotConfig},
-    slot::{Slot, SyncSlot, SyncSlotProcessor},
+use argon::config::{ArgonRackSlotConfig, ArgonSlotConfig};
+use argon_slot::{
+    processor::{sync::SyncSlotProcessor, SlotPacket, SlotProcessorResult},
+    Slot, SyncSlot,
 };
+use thiserror::Error;
 
 pub struct DummySlot {}
 
@@ -19,8 +19,7 @@ impl SyncSlotProcessor for DummySlot {
     fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<crate::slot::SlotPacket<Self::Event, Self::Data>, tun::TunPacket>
-    {
+    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
         todo!()
     }
 
@@ -32,7 +31,7 @@ impl SyncSlotProcessor for DummySlot {
         todo!()
     }
 
-    fn process(&self, data: Self::Data) -> crate::slot::SlotProcessResult {
+    fn process(&self, data: Self::Data) -> SlotProcessorResult {
         todo!()
     }
 }
@@ -51,7 +50,6 @@ pub struct TunRackSlot {
 impl TunRackSlot {
     pub fn build(
         layout: Vec<ArgonRackSlotConfig>,
-        slots: HashMap<String, ArgonSlotConfig>,
     ) -> Result<Vec<TunRackSlot>, TunRackLayoutError> {
         let mut result = Vec::<TunRackSlot>::with_capacity(layout.len());
 
