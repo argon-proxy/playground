@@ -1,9 +1,9 @@
 use super::{SlotPacket, SlotProcessorResult};
 
 pub trait SyncSlotProcessor: Send + Sync + 'static {
-    type Event: Send + Sync;
-    type Data: Send + Sync;
-    type Action: Send + Sync;
+    type Event: Send;
+    type Data: Send;
+    type Action: Send;
 
     fn deserialize(
         &self,

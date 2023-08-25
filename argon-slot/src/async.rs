@@ -6,14 +6,6 @@ use tokio::sync::RwLock;
 use super::{worker::SlotWorkerHandle, Slot, SlotConfig};
 use crate::{processor::r#async::AsyncSlotProcessor, worker, ArgonSlotError};
 
-pub type AbiAsyncSlotProcessor = Box<
-    dyn AsyncSlotProcessor<
-        Event = dyn Send + Sync,
-        Data = dyn Send + Sync,
-        Action = dyn Send + Sync,
-    >,
->;
-
 pub struct AsyncSlot<SP>
 where
     SP: AsyncSlotProcessor,

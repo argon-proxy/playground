@@ -3,7 +3,7 @@ use argon::rotary::{RotaryCanon, RotaryTarget};
 use super::{worker::SlotWorkerHandle, SlotConfig};
 use crate::ArgonSlotError;
 
-pub trait Slot: 'static {
+pub trait Slot {
     fn get_config(&self) -> SlotConfig;
 
     fn start_worker(

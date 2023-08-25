@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 argon-slot = { path = "../argon-slot" }
+
+tun = { workspace = true }

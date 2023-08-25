@@ -7,4 +7,7 @@ use clap::Parser;
 pub struct Cli {
     #[arg(long)]
     pub config: Option<PathBuf>,
+
+    #[arg(long)]
+    pub plugin_path: Option<PathBuf>,
 }

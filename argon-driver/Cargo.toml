@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 argon = { path = "../argon" }
-argon-slot = { path = "../argon-slot" }
+argon-plugin-registry = { path = "../argon-plugin-registry" }
 argon-rack = { path = "../argon-rack" }
+argon-slot = { path = "../argon-slot" }
 argon-slot-log = { path = "../argon-slot-log" }
 argon-slot-ping = { path = "../argon-slot-ping" }
 

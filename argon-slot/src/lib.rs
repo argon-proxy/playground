@@ -1,5 +1,7 @@
+#![feature(vec_into_raw_parts)]
+
 mod r#async;
-pub use r#async::{AbiAsyncSlotProcessor, AsyncSlot};
+pub use r#async::AsyncSlot;
 
 mod config;
 pub use config::SlotConfig;
@@ -10,7 +12,7 @@ pub use error::ArgonSlotError;
 pub mod processor;
 
 mod sync;
-pub use sync::{AbiSyncSlotProcessor, SyncSlot};
+pub use sync::SyncSlot;
 
 mod traits;
 pub use traits::Slot;

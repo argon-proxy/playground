@@ -19,3 +19,5 @@ pub trait AsyncSlotProcessor: Send + Sync + 'static {
 
     async fn process(&self, data: Self::Data) -> SlotProcessorResult;
 }
+
+// TODO: CAsyncSlotProcessor

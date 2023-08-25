@@ -3,7 +3,11 @@ name = "argon-slot-log"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+argon-plugin = { path = "../argon-plugin" }
 argon-slot = { path = "../argon-slot" }
 
 tun = { workspace = true }

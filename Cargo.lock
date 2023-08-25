@@ -92,6 +92,7 @@ name = "argon-plugin"
 version = "0.1.0"
 dependencies = [
  "argon-slot",
+ "tun",
 ]
 
 [[package]]
@@ -135,6 +136,7 @@ dependencies = [
 name = "argon-slot-log"
 version = "0.1.0"
 dependencies = [
+ "argon-plugin",
  "argon-slot",
  "tun",
 ]
@@ -154,6 +156,7 @@ name = "argon-tun"
 version = "0.1.0"
 dependencies = [
  "argon",
+ "argon-plugin-registry",
  "argon-rack",
  "argon-slot",
  "argon-slot-log",

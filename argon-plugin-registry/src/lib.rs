@@ -4,7 +4,7 @@ use std::{
 };
 
 use argon_plugin::ArgonPlugin;
-use argon_slot::{AbiAsyncSlotProcessor, AbiSyncSlotProcessor};
+use argon_slot::processor::ffi::CSyncSlotProcessor;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -67,7 +67,7 @@ impl ArgonPluginRegistry {
     pub fn build_sync_slot(
         &self,
         plugin_name: &str,
-    ) -> Result<AbiSyncSlotProcessor, ArgonPluginRegistryError> {
+    ) -> Result<CSyncSlotProcessor, ArgonPluginRegistryError> {
         match self.plugins.get(plugin_name) {
             Some(plugin) => plugin
                 .build_sync_slot()
@@ -79,7 +79,7 @@ impl ArgonPluginRegistry {
     pub fn build_async_slot(
         &self,
         plugin_name: &str,
-    ) -> Result<AbiAsyncSlotProcessor, ArgonPluginRegistryError> {
+    ) -> Result<(), ArgonPluginRegistryError> {
         match self.plugins.get(plugin_name) {
             Some(plugin) => plugin
                 .build_async_slot()

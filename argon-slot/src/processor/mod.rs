@@ -1,5 +1,7 @@
 pub mod r#async;
 
+pub mod ffi;
+
 mod packet;
 pub use packet::SlotPacket;
 

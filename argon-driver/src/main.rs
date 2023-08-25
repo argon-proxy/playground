@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use argon::{config::ArgonConfig, ArgonTun};
+use argon_plugin_registry::ArgonPluginRegistry;
 use argon_rack::{TunRackBuilder, TunRackSlot};
 use argon_slot::SlotConfig;
 use argon_slot_log::LogSlotProcessor;
@@ -27,6 +28,18 @@ fn main() {
 
     println!("config: {}", serde_json::to_string_pretty(&config).unwrap());
 
+    let mut plugin_registry = ArgonPluginRegistry::default();
+
+    if let Some(plugin_path) = cli.plugin_path {
+        for path in std::fs::read_dir(&plugin_path).unwrap() {
+            let path = path.unwrap();
+
+            if path.file_name().to_str().unwrap().ends_with(".so") {
+                plugin_registry.load_plugin(path.path()).unwrap();
+            }
+        }
+    }
+
     let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name_fn(|| {
@@ -36,19 +49,23 @@ fn main() {
         })
         .build()
         .unwrap()
-        .block_on(async move { run(config).await });
+        .block_on(async move { run(config, plugin_registry).await });
 
     if let Err(e) = result {
         println!("error: {e:?}");
     }
 }
 
-async fn run(config: ArgonConfig) -> Result<(), ArgonDriverError> {
+async fn run(
+    config: ArgonConfig,
+    plugin_registry: ArgonPluginRegistry,
+) -> Result<(), ArgonDriverError> {
     let mut tun = ArgonTun::new(config.tun)?;
 
     let rack_layout = TunRackSlot::build(config.rack.layout)?;
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
+        .add_sync_slot(plugin_registry.build_sync_slot("argon/log").unwrap())
         .add_async_slot((
             PingSlotProcessor::default(),
             SlotConfig::default().set_name("pingslot".to_owned()),
