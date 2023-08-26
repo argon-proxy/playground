@@ -16,7 +16,7 @@
   "slots": {
     "log": {
       "plugin": "argon/log",
-      "workers": 1
+      "workers": 4
     },
     "ping": {
       "plugin": "argon/ping",

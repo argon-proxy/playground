@@ -1,30 +1,41 @@
+use argon::config::ArgonSlotConfig;
+
 #[derive(Clone)]
 pub struct SlotConfig {
-    pub workers: usize,
     pub name: String,
+    pub workers: usize,
 }
 
 impl Default for SlotConfig {
     fn default() -> Self {
         Self {
-            workers: 1,
             name: "slot".to_owned(),
+            workers: 1,
         }
     }
 }
 
 impl SlotConfig {
-    pub fn set_workers(mut self, workers: usize) -> Self {
+    pub fn with_name(mut self, name: String) -> Self {
+        self.name = name;
+
+        self
+    }
+
+    pub fn with_workers(mut self, workers: usize) -> Self {
         debug_assert!(workers > 0);
 
         self.workers = workers;
 
         self
     }
+}
 
-    pub fn set_name(mut self, name: String) -> Self {
-        self.name = name;
-
-        self
+impl From<&ArgonSlotConfig> for SlotConfig {
+    fn from(value: &ArgonSlotConfig) -> Self {
+        Self {
+            name: value.plugin.to_owned(),
+            workers: value.workers,
+        }
     }
 }

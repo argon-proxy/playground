@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use argon::config::{ArgonRackSlotConfig, ArgonRuntimeType, ArgonSlotConfig};
 use argon_plugin_registry::{ArgonPluginRegistry, ArgonPluginRegistryError};
-use argon_slot::{Slot, SyncSlot};
+use argon_slot::{Slot, SlotConfig, SyncSlot};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -33,8 +33,7 @@ impl<'pr> TunRackSlot<'pr> {
 
             result.push(TunRackSlot {
                 slot_builder: create_slot_builder(
-                    &slot_config.plugin,
-                    &slot_config.runtime,
+                    &slot_config,
                     plugin_registry,
                 ),
                 sink: slot.sink,
@@ -46,18 +45,19 @@ impl<'pr> TunRackSlot<'pr> {
 }
 
 fn create_slot_builder<'pr>(
-    plugin_name: &String,
-    runtime: &ArgonRuntimeType,
+    config: &ArgonSlotConfig,
     plugin_registry: &'pr ArgonPluginRegistry,
 ) -> Box<dyn FnOnce() -> Result<Box<dyn Slot>, ArgonPluginRegistryError> + 'pr>
 {
-    let plugin_name = plugin_name.to_owned();
+    let plugin_name = config.plugin.to_owned();
 
-    match runtime {
+    let slot_config = SlotConfig::from(config);
+
+    match config.runtime {
         ArgonRuntimeType::Sync => Box::new(move || {
             Ok(plugin_registry
                 .build_sync_slot(&plugin_name)
-                .map(|p| Box::<SyncSlot<_>>::new((p).into()))?)
+                .map(|p| Box::<SyncSlot<_>>::new((p, slot_config).into()))?)
         }),
         ArgonRuntimeType::Async => todo!(),
     }
