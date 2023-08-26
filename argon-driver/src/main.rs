@@ -66,6 +66,7 @@ async fn run(
 
     let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
         .add_sync_slot(plugin_registry.build_sync_slot("argon/log").unwrap())
+        .add_sync_slot(plugin_registry.build_sync_slot("argon/ping").unwrap())
         .add_async_slot((
             PingSlotProcessor::default(),
             SlotConfig::default().set_name("pingslot".to_owned()),

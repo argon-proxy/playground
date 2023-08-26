@@ -145,6 +145,7 @@ dependencies = [
 name = "argon-slot-ping"
 version = "0.1.0"
 dependencies = [
+ "argon-plugin",
  "argon-slot",
  "async-trait",
  "packet",

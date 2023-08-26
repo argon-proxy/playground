@@ -1,3 +1,4 @@
+use argon_plugin::argon_plugin;
 use argon_slot::processor::{
     r#async::AsyncSlotProcessor, sync::SyncSlotProcessor, SlotPacket,
     SlotProcessorResult,
@@ -5,16 +6,20 @@ use argon_slot::processor::{
 use async_trait::async_trait;
 use packet::{Builder, Packet};
 
+type Event = ();
+type Data = (
+    packet::ip::v4::Packet<Vec<u8>>,
+    packet::icmp::echo::Packet<Vec<u8>>,
+);
+type Action = ();
+
 #[derive(Default)]
 pub struct PingSlotProcessor {}
 
 impl SyncSlotProcessor for PingSlotProcessor {
-    type Event = ();
-    type Data = (
-        packet::ip::v4::Packet<Vec<u8>>,
-        packet::icmp::echo::Packet<Vec<u8>>,
-    );
-    type Action = ();
+    type Event = Event;
+    type Data = Data;
+    type Action = Action;
 
     fn deserialize(
         &self,
@@ -76,6 +81,19 @@ impl SyncSlotProcessor for PingSlotProcessor {
         }
     }
 }
+
+#[derive(Default)]
+pub struct PingSlotPlugin {}
+
+argon_plugin!(
+    "argon/ping",
+    PingSlotPlugin,
+    PingSlotPlugin::default,
+    PingSlotProcessor,
+    Event,
+    Data,
+    Action
+);
 
 #[async_trait]
 impl AsyncSlotProcessor for PingSlotProcessor {
