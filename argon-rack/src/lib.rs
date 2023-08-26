@@ -24,6 +24,10 @@ pub struct TunRackBuilder {
 }
 
 impl TunRackBuilder {
+    pub fn add_slot(&mut self, slot: Box<dyn Slot>) {
+        self.slots.push(slot)
+    }
+
     pub fn add_sync_slot<SP>(
         mut self,
         slot: impl Into<Box<SyncSlot<SP>>>,

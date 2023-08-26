@@ -1,40 +1,9 @@
 use std::collections::HashMap;
 
-use argon::config::{ArgonRackSlotConfig, ArgonSlotConfig};
-use argon_slot::{
-    processor::{sync::SyncSlotProcessor, SlotPacket, SlotProcessorResult},
-    Slot, SyncSlot,
-};
+use argon::config::{ArgonRackSlotConfig, ArgonRuntimeType, ArgonSlotConfig};
+use argon_plugin_registry::{ArgonPluginRegistry, ArgonPluginRegistryError};
+use argon_slot::{Slot, SyncSlot};
 use thiserror::Error;
-
-pub struct DummySlot {}
-
-impl SyncSlotProcessor for DummySlot {
-    type Event = ();
-
-    type Data = ();
-
-    type Action = ();
-
-    fn deserialize(
-        &self,
-        packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        todo!()
-    }
-
-    fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action> {
-        todo!()
-    }
-
-    fn serialize(&self, action: Self::Action) -> tun::TunPacket {
-        todo!()
-    }
-
-    fn process(&self, data: Self::Data) -> SlotProcessorResult {
-        todo!()
-    }
-}
 
 #[derive(Error, Debug)]
 pub enum TunRackLayoutError {
@@ -42,26 +11,54 @@ pub enum TunRackLayoutError {
     SlotMissing,
 }
 
-pub struct TunRackSlot {
-    pub slot_builder: Box<dyn Fn() -> Box<dyn Slot>>,
+pub struct TunRackSlot<'pr> {
+    pub slot_builder: Box<
+        dyn FnOnce() -> Result<Box<dyn Slot>, ArgonPluginRegistryError> + 'pr,
+    >,
     pub sink: bool,
 }
 
-impl TunRackSlot {
+impl<'pr> TunRackSlot<'pr> {
     pub fn build(
         layout: Vec<ArgonRackSlotConfig>,
-    ) -> Result<Vec<TunRackSlot>, TunRackLayoutError> {
+        slots: HashMap<String, ArgonSlotConfig>,
+        plugin_registry: &'pr ArgonPluginRegistry,
+    ) -> Result<Vec<TunRackSlot<'pr>>, TunRackLayoutError> {
         let mut result = Vec::<TunRackSlot>::with_capacity(layout.len());
 
         for slot in layout {
+            let slot_config = slots
+                .get(&slot.slot)
+                .ok_or(TunRackLayoutError::SlotMissing)?;
+
             result.push(TunRackSlot {
-                slot_builder: Box::new(|| {
-                    Box::<SyncSlot<_>>::new((DummySlot {}).into())
-                }),
+                slot_builder: create_slot_builder(
+                    &slot_config.plugin,
+                    &slot_config.runtime,
+                    plugin_registry,
+                ),
                 sink: slot.sink,
             });
         }
 
         Ok(result)
+    }
+}
+
+fn create_slot_builder<'pr>(
+    plugin_name: &String,
+    runtime: &ArgonRuntimeType,
+    plugin_registry: &'pr ArgonPluginRegistry,
+) -> Box<dyn FnOnce() -> Result<Box<dyn Slot>, ArgonPluginRegistryError> + 'pr>
+{
+    let plugin_name = plugin_name.to_owned();
+
+    match runtime {
+        ArgonRuntimeType::Sync => Box::new(move || {
+            Ok(plugin_registry
+                .build_sync_slot(&plugin_name)
+                .map(|p| Box::<SyncSlot<_>>::new((p).into()))?)
+        }),
+        ArgonRuntimeType::Async => todo!(),
     }
 }

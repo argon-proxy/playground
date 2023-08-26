@@ -49,7 +49,7 @@ fn main() {
         })
         .build()
         .unwrap()
-        .block_on(async move { run(config, plugin_registry).await });
+        .block_on(async move { run(config, &mut plugin_registry).await });
 
     if let Err(e) = result {
         println!("error: {e:?}");
@@ -58,25 +58,20 @@ fn main() {
 
 async fn run(
     config: ArgonConfig,
-    plugin_registry: ArgonPluginRegistry,
+    plugin_registry: &mut ArgonPluginRegistry,
 ) -> Result<(), ArgonDriverError> {
     let mut tun = ArgonTun::new(config.tun)?;
 
-    let rack_layout = TunRackSlot::build(config.rack.layout)?;
+    let rack_layout =
+        TunRackSlot::build(config.rack.layout, config.slots, plugin_registry)?;
 
-    let (mut entry_tx, mut rack, mut exit_rx) = TunRackBuilder::default()
-        .add_sync_slot(plugin_registry.build_sync_slot("argon/log").unwrap())
-        .add_sync_slot(plugin_registry.build_sync_slot("argon/ping").unwrap())
-        .add_async_slot((
-            PingSlotProcessor::default(),
-            SlotConfig::default().set_name("pingslot".to_owned()),
-        ))
-        .add_async_slot((
-            PingSlotProcessor::default(),
-            SlotConfig::default().set_name("pingslot".to_owned()),
-        ))
-        .add_sync_slot(LogSlotProcessor::default())
-        .build()?;
+    let mut rack_builder = TunRackBuilder::default();
+
+    for slot in rack_layout {
+        rack_builder.add_slot((slot.slot_builder)()?)
+    }
+
+    let (mut entry_tx, mut rack, mut exit_rx) = rack_builder.build()?;
 
     loop {
         tokio::select! {

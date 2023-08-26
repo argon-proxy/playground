@@ -110,6 +110,7 @@ name = "argon-rack"
 version = "0.1.0"
 dependencies = [
  "argon",
+ "argon-plugin-registry",
  "argon-slot",
  "futures",
  "gcd",

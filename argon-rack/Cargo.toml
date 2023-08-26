@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 argon = { path = "../argon" }
+argon-plugin-registry = { path = "../argon-plugin-registry" }
 argon-slot = { path = "../argon-slot" }
 
 futures = { workspace = true }
