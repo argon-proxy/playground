@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use super::{SlotPacket, SlotProcessorResult};
 
 #[async_trait]
-pub trait AsyncSlotProcessor: Send + Sync + 'static {
+pub trait AsyncSlotProcessor: Clone + Send + Sync + 'static {
     type Event: Send + Sync;
     type Data: Send + Sync;
     type Action: Send + Sync;
@@ -11,7 +11,7 @@ pub trait AsyncSlotProcessor: Send + Sync + 'static {
     async fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
+    ) -> SlotPacket<Self::Event, Self::Data>;
 
     async fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action>;
 

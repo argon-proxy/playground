@@ -64,17 +64,20 @@ macro_rules! argon_plugin {
         extern "C" fn sync_deserialize(
             p: *const std::ffi::c_void,
             packet: tun::TunPacket,
-        ) -> Result<SlotPacket<CEvent, CData>, tun::TunPacket> {
+        ) -> SlotPacket<CEvent, CData> {
             let p = unsafe { &*(p.cast::<$processor_sync_type>()) };
 
-            let result = SyncSlotProcessor::deserialize(p, packet)?;
+            let result = SyncSlotProcessor::deserialize(p, packet);
 
-            Ok(match result {
+            match result {
                 SlotPacket::Event(event) => {
                     SlotPacket::Event(event_to_cevent(event))
                 },
                 SlotPacket::Data(data) => SlotPacket::Data(data_to_cdata(data)),
-            })
+                SlotPacket::Forward(tun_packet) => {
+                    SlotPacket::Forward(tun_packet)
+                },
+            }
         }
 
         extern "C" fn sync_handle_event(

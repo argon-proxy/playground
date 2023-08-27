@@ -13,7 +13,7 @@ type Data = (
 );
 type Action = ();
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct PingSlotProcessor {}
 
 impl SyncSlotProcessor for PingSlotProcessor {
@@ -24,22 +24,23 @@ impl SyncSlotProcessor for PingSlotProcessor {
     fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        match packet::ip::Packet::new(packet.get_bytes()) {
-            Ok(packet::ip::Packet::V4(ipv4_packet)) => {
-                match packet::icmp::Packet::new(ipv4_packet.payload()) {
-                    Ok(icmp_packet) => match icmp_packet.echo() {
-                        Ok(icmp_echo_packet) => Ok(SlotPacket::Data((
-                            ipv4_packet.to_owned(),
-                            icmp_echo_packet.to_owned(),
-                        ))),
-                        _ => Err(packet),
-                    },
-                    _ => Err(packet),
+    ) -> SlotPacket<Self::Event, Self::Data> {
+        if let Ok(packet::ip::Packet::V4(ipv4_packet)) =
+            packet::ip::Packet::new(packet.get_bytes())
+        {
+            if let Ok(icmp_packet) =
+                packet::icmp::Packet::new(ipv4_packet.payload())
+            {
+                if let Ok(icmp_echo_packet) = icmp_packet.echo() {
+                    return SlotPacket::Data((
+                        ipv4_packet.to_owned(),
+                        icmp_echo_packet.to_owned(),
+                    ));
                 }
-            },
-            _ => Err(packet),
+            }
         }
+
+        SlotPacket::Forward(packet)
     }
 
     fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {
@@ -107,7 +108,7 @@ impl AsyncSlotProcessor for PingSlotProcessor {
     async fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    ) -> SlotPacket<Self::Event, Self::Data> {
         <Self as SyncSlotProcessor>::deserialize(self, packet)
     }
 

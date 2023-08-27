@@ -6,15 +6,14 @@ use crate::processor::{
 };
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct CSyncSlotProcessor {
     pub processor: *mut c_void,
 
-    pub deserialize:
-        extern "C" fn(
-            *const c_void,
-            tun::TunPacket,
-        )
-            -> Result<SlotPacket<CEvent, CData>, tun::TunPacket>,
+    pub deserialize: extern "C" fn(
+        *const c_void,
+        tun::TunPacket,
+    ) -> SlotPacket<CEvent, CData>,
 
     pub handle_event: extern "C" fn(*mut c_void, CEvent) -> CActions,
 
@@ -34,7 +33,7 @@ impl SyncSlotProcessor for CSyncSlotProcessor {
     fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+    ) -> SlotPacket<Self::Event, Self::Data> {
         (self.deserialize)(self.processor, packet)
     }
 

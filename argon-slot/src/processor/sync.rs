@@ -1,6 +1,6 @@
 use super::{SlotPacket, SlotProcessorResult};
 
-pub trait SyncSlotProcessor: Send + Sync + 'static {
+pub trait SyncSlotProcessor: Clone + Send + Sync + 'static {
     type Event: Send;
     type Data: Send;
     type Action: Send;
@@ -8,7 +8,7 @@ pub trait SyncSlotProcessor: Send + Sync + 'static {
     fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket>;
+    ) -> SlotPacket<Self::Event, Self::Data>;
 
     fn handle_event(&mut self, event: Self::Event) -> Vec<Self::Action>;
 

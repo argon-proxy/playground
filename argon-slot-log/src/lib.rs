@@ -7,7 +7,7 @@ type Event = ();
 type Data = tun::TunPacket;
 type Action = ();
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct LogSlotProcessor {}
 
 impl SyncSlotProcessor for LogSlotProcessor {
@@ -18,8 +18,9 @@ impl SyncSlotProcessor for LogSlotProcessor {
     fn deserialize(
         &self,
         packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
-        Ok(SlotPacket::Data(packet))
+    ) -> SlotPacket<Self::Event, Self::Data> {
+        println!("[logslot] {packet:?}");
+        SlotPacket::Forward(packet)
     }
 
     fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {
@@ -30,13 +31,8 @@ impl SyncSlotProcessor for LogSlotProcessor {
         unreachable!()
     }
 
-    fn process(&self, data: Self::Data) -> SlotProcessorResult {
-        println!("[logslot] {data:?}");
-
-        SlotProcessorResult {
-            forward: vec![data],
-            exit: vec![],
-        }
+    fn process(&self, _data: Self::Data) -> SlotProcessorResult {
+        unreachable!()
     }
 }
 

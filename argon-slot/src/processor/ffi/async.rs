@@ -8,6 +8,7 @@ use crate::processor::{
 };
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct CAsyncSlotProcessor {
     pub processor: *mut c_void,
 }
@@ -23,8 +24,8 @@ impl AsyncSlotProcessor for CAsyncSlotProcessor {
 
     async fn deserialize(
         &self,
-        packet: tun::TunPacket,
-    ) -> Result<SlotPacket<Self::Event, Self::Data>, tun::TunPacket> {
+        _packet: tun::TunPacket,
+    ) -> SlotPacket<Self::Event, Self::Data> {
         todo!()
     }
 

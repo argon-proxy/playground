@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use argon::rotary::{RotaryCanon, RotaryTarget};
-use tokio::sync::RwLock;
 
 use super::{worker::SlotWorkerHandle, Slot, SlotConfig};
 use crate::{processor::sync::SyncSlotProcessor, worker, ArgonSlotError};
@@ -10,7 +7,7 @@ pub struct SyncSlot<SP>
 where
     SP: SyncSlotProcessor,
 {
-    processor: Arc<RwLock<SP>>,
+    processor: SP,
     config: SlotConfig,
 }
 
@@ -20,7 +17,7 @@ where
 {
     fn from(processor: SP) -> Self {
         Self {
-            processor: Arc::new(RwLock::new(processor)),
+            processor,
             config: SlotConfig::default(),
         }
     }
@@ -41,7 +38,7 @@ where
 {
     fn from(pair: (SP, SlotConfig)) -> Self {
         Self {
-            processor: Arc::new(RwLock::new(pair.0)),
+            processor: pair.0,
             config: pair.1,
         }
     }
