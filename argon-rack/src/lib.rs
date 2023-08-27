@@ -1,12 +1,8 @@
 use argon::rotary::{build_single_channel, RotaryCanon, RotaryTarget};
-use argon_slot::{
-    processor::{r#async::AsyncSlotProcessor, sync::SyncSlotProcessor},
-    worker::SlotWorkerHandle,
-    AsyncSlot, Slot, SyncSlot,
-};
+use argon_slot::worker::SlotWorkerHandle;
 use futures::{FutureExt, Stream, StreamExt};
 use gcd::euclid_usize;
-use itertools::{multizip, Itertools};
+use layout::TunRackLayoutSlot;
 use nonempty::NonEmpty;
 
 mod constants;
@@ -16,40 +12,115 @@ mod error;
 pub use error::TunRackError;
 
 mod layout;
-pub use layout::{TunRackLayoutError, TunRackSlot};
+pub use layout::{TunRackLayout, TunRackLayoutError};
 
 #[derive(Default)]
-pub struct TunRackBuilder {
-    slots: Vec<Box<dyn Slot>>,
-}
+pub struct TunRackBuilder {}
 
 impl TunRackBuilder {
-    pub fn add_slot(&mut self, slot: Box<dyn Slot>) {
-        self.slots.push(slot)
+    pub fn build_from_layout(
+        self,
+        layout: TunRackLayout,
+    ) -> Result<(RotaryCanon, TunRack, RotaryTarget), TunRackError> {
+        let mut handles = Vec::default();
+
+        let (exit_tx, exit_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
+        let exit_tx = RotaryCanon::from(exit_tx);
+        let exit_rx = RotaryTarget::from(exit_rx);
+
+        let (entry_tx, next_rx) =
+            Self::build_layout_slots(layout.slots, &mut handles, &exit_tx)?;
+
+        Ok((entry_tx, TunRack::new(handles, next_rx), exit_rx))
     }
 
-    pub fn add_sync_slot<SP>(
-        mut self,
-        slot: impl Into<Box<SyncSlot<SP>>>,
-    ) -> Self
-    where
-        SP: SyncSlotProcessor,
-    {
-        self.slots.push(slot.into());
+    fn build_layout_slots(
+        slots: Vec<TunRackLayoutSlot>,
+        handles: &mut Vec<SlotWorkerHandle>,
+        exit_tx: &RotaryCanon,
+    ) -> Result<(RotaryCanon, RotaryTarget), TunRackError> {
+        let (slot_entry_tx, exit_rx) =
+            build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
 
-        self
-    }
+        let mut slot_rev_iter = slots.into_iter().rev();
 
-    pub fn add_async_slot<SP>(
-        mut self,
-        slot: impl Into<Box<AsyncSlot<SP>>>,
-    ) -> Self
-    where
-        SP: AsyncSlotProcessor,
-    {
-        self.slots.push(slot.into());
+        let Some(slot) = slot_rev_iter.next() else {
+            return Ok((RotaryCanon::from(slot_entry_tx), RotaryTarget::from(exit_rx)));
+        };
 
-        self
+        let (mut slot, mut slot_props) = slot.build()?;
+        let mut slot_entry_txs = (0..slot.get_config().workers)
+            .map(|_| RotaryCanon::from(slot_entry_tx.clone()))
+            .collect::<Vec<RotaryCanon>>();
+
+        drop(slot_entry_tx);
+
+        for prev_slot in slot_rev_iter {
+            let (prev_slot, prev_slot_props) = prev_slot.build()?;
+
+            let prev_slot_config = prev_slot.get_config();
+
+            let channel_groups =
+                euclid_usize(prev_slot_config.workers, slot_entry_txs.len());
+
+            let (prev_slot_entry_txs, prev_slot_next_rxs) = (0..channel_groups)
+                .map(|_| {
+                    Self::build_channels(
+                        prev_slot_config.workers / channel_groups,
+                        slot_entry_txs.len() / channel_groups,
+                    )
+                })
+                .fold(
+                    (
+                        Vec::with_capacity(prev_slot_config.workers),
+                        Vec::with_capacity(slot_entry_txs.len()),
+                    ),
+                    |mut acc, (txs, rxs)| {
+                        acc.0.extend(txs);
+                        acc.1.extend(rxs);
+                        acc
+                    },
+                );
+
+            let mut prev_slot_next_rxs_iter = prev_slot_next_rxs.into_iter();
+            let mut slot_entry_txs_iter = slot_entry_txs.into_iter();
+
+            // TODO: Handle subslot routing
+
+            for (entry_rx, next_tx) in
+                (&mut prev_slot_next_rxs_iter).zip(&mut slot_entry_txs_iter)
+            {
+                handles.push(slot.start_worker(
+                    entry_rx,
+                    next_tx,
+                    exit_tx.clone(),
+                )?);
+            }
+
+            slot = prev_slot;
+            slot_props = prev_slot_props;
+            slot_entry_txs = prev_slot_entry_txs;
+        }
+
+        let mut entry_txs = Vec::new();
+
+        for next_tx in slot_entry_txs {
+            let (entry_tx, entry_rx) =
+                build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
+
+            entry_txs.push(entry_tx);
+
+            handles.push(slot.start_worker(
+                RotaryTarget::from(entry_rx),
+                next_tx,
+                exit_tx.clone(),
+            )?);
+        }
+
+        Ok((
+            RotaryCanon::new(NonEmpty::from_vec(entry_txs).unwrap()),
+            RotaryTarget::from(exit_rx),
+        ))
     }
 
     fn build_channels(
@@ -66,82 +137,8 @@ impl TunRackBuilder {
                     RotaryCanon::new(NonEmpty::from_vec(ins.clone()).unwrap())
                 })
                 .collect(),
-            outs.into_iter()
-                .map(|rx| RotaryTarget::new(NonEmpty::new(rx)))
-                .collect(),
+            outs.into_iter().map(RotaryTarget::from).collect(),
         )
-    }
-
-    pub fn build(
-        self,
-    ) -> Result<(RotaryCanon, TunRack, RotaryTarget), TunRackError> {
-        let (canons, targets): (Vec<Vec<RotaryCanon>>, Vec<Vec<RotaryTarget>>) =
-            [1].into_iter()
-                .chain(self.slots.iter().map(|slot| slot.get_config().workers))
-                .chain([1])
-                .tuple_windows()
-                .map(|(prev, curr)| {
-                    let groups = euclid_usize(prev, curr);
-
-                    (0..groups)
-                        .map(|_| {
-                            Self::build_channels(prev / groups, curr / groups)
-                        })
-                        .fold(
-                            (Vec::default(), Vec::default()),
-                            |mut acc, (txs, rxs)| {
-                                acc.0.extend(txs);
-                                acc.1.extend(rxs);
-                                acc
-                            },
-                        )
-                })
-                .unzip();
-
-        let mut canons = canons.into_iter();
-        let canon_first = canons
-            .next()
-            .and_then(|c| c.into_iter().next())
-            .ok_or(TunRackError::InternalError)?;
-
-        let mut targets = targets.into_iter();
-
-        let mut handles = Vec::default();
-
-        let (exit_tx, exit_rx) = build_single_channel(INTRA_SLOT_CHANNEL_SIZE);
-        let exit_tx = RotaryCanon::new(NonEmpty::new(exit_tx));
-        let exit_rx = RotaryTarget::new(NonEmpty::new(exit_rx));
-
-        for (mut slot, slot_canons, slot_targets) in
-            multizip((self.slots, &mut canons, &mut targets))
-        {
-            let workers = slot.get_config().workers;
-
-            debug_assert!(workers == slot_canons.len());
-            debug_assert!(workers == slot_targets.len());
-
-            for (slot_canon, slot_target) in
-                multizip((slot_canons, slot_targets))
-            {
-                let handle = slot.start_worker(
-                    slot_target,
-                    slot_canon,
-                    exit_tx.clone(),
-                )?;
-
-                handles.push(handle);
-            }
-        }
-
-        debug_assert!(canons.next().is_none());
-
-        let target_last = targets
-            .next()
-            .and_then(|c| c.into_iter().next())
-            .ok_or(TunRackError::InternalError)?;
-        debug_assert!(targets.next().is_none());
-
-        Ok((canon_first, TunRack::new(handles, target_last), exit_rx))
     }
 }
 

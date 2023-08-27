@@ -34,7 +34,7 @@ impl SlotConfig {
 impl From<&ArgonSlotConfig> for SlotConfig {
     fn from(value: &ArgonSlotConfig) -> Self {
         Self {
-            name: value.plugin.to_owned(),
+            name: value.plugin.clone(),
             workers: value.workers,
         }
     }

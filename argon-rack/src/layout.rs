@@ -11,36 +11,74 @@ pub enum TunRackLayoutError {
     SlotMissing,
 }
 
-pub struct TunRackSlot<'pr> {
-    pub slot_builder: Box<
+pub struct TunRackLayoutSlot<'pr> {
+    slot_builder: Box<
         dyn FnOnce() -> Result<Box<dyn Slot>, ArgonPluginRegistryError> + 'pr,
     >,
-    pub sink: bool,
+    sink: bool,
+    subslots: Vec<Self>,
 }
 
-impl<'pr> TunRackSlot<'pr> {
+pub struct TunRackLayoutSlotProperties<'pr> {
+    pub sink: bool,
+    pub subslots: Vec<TunRackLayoutSlot<'pr>>,
+}
+
+impl<'pr> TunRackLayoutSlot<'pr> {
+    pub fn build(
+        self,
+    ) -> Result<
+        (Box<dyn Slot>, TunRackLayoutSlotProperties<'pr>),
+        ArgonPluginRegistryError,
+    > {
+        let slot = (self.slot_builder)()?;
+
+        Ok((slot, TunRackLayoutSlotProperties {
+            sink: self.sink,
+            subslots: self.subslots,
+        }))
+    }
+}
+
+pub struct TunRackLayout<'pr> {
+    pub slots: Vec<TunRackLayoutSlot<'pr>>,
+}
+
+impl<'pr> TunRackLayout<'pr> {
     pub fn build(
         layout: Vec<ArgonRackSlotConfig>,
-        slots: HashMap<String, ArgonSlotConfig>,
+        slotmap: HashMap<String, ArgonSlotConfig>,
         plugin_registry: &'pr ArgonPluginRegistry,
-    ) -> Result<Vec<TunRackSlot<'pr>>, TunRackLayoutError> {
-        let mut result = Vec::<TunRackSlot>::with_capacity(layout.len());
+    ) -> Result<TunRackLayout, TunRackLayoutError> {
+        Ok(TunRackLayout {
+            slots: Self::build_slots(layout, &slotmap, plugin_registry)?,
+        })
+    }
+
+    fn build_slots(
+        layout: Vec<ArgonRackSlotConfig>,
+        slotmap: &HashMap<String, ArgonSlotConfig>,
+        plugin_registry: &'pr ArgonPluginRegistry,
+    ) -> Result<Vec<TunRackLayoutSlot<'pr>>, TunRackLayoutError> {
+        let mut slots = Vec::<TunRackLayoutSlot>::with_capacity(layout.len());
 
         for slot in layout {
-            let slot_config = slots
+            let slot_config = slotmap
                 .get(&slot.slot)
                 .ok_or(TunRackLayoutError::SlotMissing)?;
 
-            result.push(TunRackSlot {
-                slot_builder: create_slot_builder(
-                    &slot_config,
-                    plugin_registry,
-                ),
+            slots.push(TunRackLayoutSlot {
+                slot_builder: create_slot_builder(slot_config, plugin_registry),
                 sink: slot.sink,
+                subslots: Self::build_slots(
+                    slot.subslots,
+                    slotmap,
+                    plugin_registry,
+                )?,
             });
         }
 
-        Ok(result)
+        Ok(slots)
     }
 }
 
@@ -49,7 +87,7 @@ fn create_slot_builder<'pr>(
     plugin_registry: &'pr ArgonPluginRegistry,
 ) -> Box<dyn FnOnce() -> Result<Box<dyn Slot>, ArgonPluginRegistryError> + 'pr>
 {
-    let plugin_name = config.plugin.to_owned();
+    let plugin_name = config.plugin.clone();
 
     let slot_config = SlotConfig::from(config);
 

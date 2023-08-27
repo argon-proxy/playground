@@ -2,10 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use argon::{config::ArgonConfig, ArgonTun};
 use argon_plugin_registry::ArgonPluginRegistry;
-use argon_rack::{TunRackBuilder, TunRackSlot};
-use argon_slot::SlotConfig;
-use argon_slot_log::LogSlotProcessor;
-use argon_slot_ping::PingSlotProcessor;
+use argon_rack::{TunRackBuilder, TunRackLayout};
 use clap::Parser;
 use futures::{SinkExt, StreamExt};
 
@@ -31,11 +28,16 @@ fn main() {
     let mut plugin_registry = ArgonPluginRegistry::default();
 
     if let Some(plugin_path) = cli.plugin_path {
-        for path in std::fs::read_dir(&plugin_path).unwrap() {
-            let path = path.unwrap();
+        for result in std::fs::read_dir(&plugin_path).unwrap() {
+            let Ok(dir_entry) = result else { continue };
 
-            if path.file_name().to_str().unwrap().ends_with(".so") {
-                plugin_registry.load_plugin(path.path()).unwrap();
+            let path = dir_entry.path();
+
+            if path
+                .extension()
+                .map_or(false, |ext| ext.eq_ignore_ascii_case("so"))
+            {
+                plugin_registry.load_plugin(path).unwrap();
             }
         }
     }
@@ -62,16 +64,14 @@ async fn run(
 ) -> Result<(), ArgonDriverError> {
     let mut tun = ArgonTun::new(config.tun)?;
 
-    let rack_layout =
-        TunRackSlot::build(config.rack.layout, config.slots, plugin_registry)?;
+    let rack_layout = TunRackLayout::build(
+        config.rack.layout,
+        config.slots,
+        plugin_registry,
+    )?;
 
-    let mut rack_builder = TunRackBuilder::default();
-
-    for slot in rack_layout {
-        rack_builder.add_slot((slot.slot_builder)()?)
-    }
-
-    let (mut entry_tx, mut rack, mut exit_rx) = rack_builder.build()?;
+    let (mut entry_tx, mut rack, mut exit_rx) =
+        TunRackBuilder::default().build_from_layout(rack_layout)?;
 
     loop {
         tokio::select! {

@@ -1,3 +1,4 @@
+use argon_plugin_registry::ArgonPluginRegistryError;
 use argon_slot::{worker::SlotWorkerError, ArgonSlotError};
 use thiserror::Error;
 
@@ -5,6 +6,9 @@ use thiserror::Error;
 pub enum TunRackError {
     #[error(transparent)]
     ArgonSlotError(#[from] ArgonSlotError),
+
+    #[error(transparent)]
+    ArgonPluginRegistryError(#[from] ArgonPluginRegistryError),
 
     #[error("SlotCrash")]
     SlotCrash,

@@ -4,9 +4,10 @@ use thiserror::Error;
 
 type Packet = tun::TunPacket;
 
-type IntraSlotSender = tokio::sync::mpsc::Sender<Packet>;
+pub type IntraSlotSender = tokio::sync::mpsc::Sender<Packet>;
 type IntraSlotSyncSendError = tokio::sync::mpsc::error::TrySendError<Packet>;
-type IntraSlotReceiver = tokio::sync::mpsc::Receiver<Packet>;
+
+pub type IntraSlotReceiver = tokio::sync::mpsc::Receiver<Packet>;
 
 pub fn build_single_channel(
     channel_size: usize,
@@ -66,6 +67,12 @@ impl RotaryCanon {
     }
 }
 
+impl From<IntraSlotSender> for RotaryCanon {
+    fn from(sender: IntraSlotSender) -> Self {
+        Self::new(NonEmpty::new(sender))
+    }
+}
+
 #[derive(Debug)]
 pub struct RotaryTarget {
     targets: Vec<IntraSlotReceiver>,
@@ -82,6 +89,12 @@ impl RotaryTarget {
     pub fn add(&mut self, target: IntraSlotReceiver) {
         self.targets.push(target);
         self.index = 0;
+    }
+}
+
+impl From<IntraSlotReceiver> for RotaryTarget {
+    fn from(receiver: IntraSlotReceiver) -> Self {
+        Self::new(NonEmpty::new(receiver))
     }
 }
 
