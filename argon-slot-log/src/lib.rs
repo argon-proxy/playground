@@ -20,7 +20,7 @@ impl SyncSlotProcessor for LogSlotProcessor {
         packet: tun::TunPacket,
     ) -> SlotPacket<Self::Event, Self::Data> {
         println!("[logslot] {packet:?}");
-        SlotPacket::Forward(packet)
+        SlotPacket::Next(packet)
     }
 
     fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {

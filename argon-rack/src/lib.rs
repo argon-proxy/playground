@@ -92,8 +92,9 @@ impl TunRackBuilder {
             {
                 handles.push(slot.start_worker(
                     entry_rx,
-                    next_tx,
                     exit_tx.clone(),
+                    next_tx,
+                    None,
                 )?);
             }
 
@@ -112,13 +113,17 @@ impl TunRackBuilder {
 
             handles.push(slot.start_worker(
                 RotaryTarget::from(entry_rx),
-                next_tx,
                 exit_tx.clone(),
+                next_tx,
+                None,
             )?);
         }
 
         Ok((
-            RotaryCanon::new(NonEmpty::from_vec(entry_txs).unwrap()),
+            RotaryCanon::new(
+                NonEmpty::from_vec(entry_txs)
+                    .ok_or(TunRackError::InternalError)?,
+            ),
             RotaryTarget::from(exit_rx),
         ))
     }

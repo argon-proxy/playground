@@ -15,6 +15,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Rust Nightly
+        run: rustup default nightly && rustup component add rustfmt
       - name: Version
         run: cargo --version
       - name: Build
@@ -35,3 +37,4 @@ jobs:
           -A clippy::module_name_repetitions
           -A clippy::must-use-candidate
           -A clippy::return_self_not_must_use
+          -A clippy::needless-pass-by-value

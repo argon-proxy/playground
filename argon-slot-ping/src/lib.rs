@@ -40,7 +40,7 @@ impl SyncSlotProcessor for PingSlotProcessor {
             }
         }
 
-        SlotPacket::Forward(packet)
+        SlotPacket::Next(packet)
     }
 
     fn handle_event(&mut self, _event: Self::Event) -> Vec<Self::Action> {

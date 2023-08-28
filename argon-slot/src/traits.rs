@@ -9,7 +9,8 @@ pub trait Slot {
     fn start_worker(
         &mut self,
         entry_rx: RotaryTarget,
-        next_tx: RotaryCanon,
         exit_tx: RotaryCanon,
+        next_tx: RotaryCanon,
+        forward_tx: Option<RotaryCanon>,
     ) -> Result<SlotWorkerHandle, ArgonSlotError>;
 }

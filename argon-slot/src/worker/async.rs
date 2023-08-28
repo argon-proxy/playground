@@ -11,8 +11,9 @@ pub async fn run_worker<SP>(
     mut processor: SP,
     config: SlotConfig,
     mut entry_rx: RotaryTarget,
-    mut next_tx: RotaryCanon,
     mut exit_tx: RotaryCanon,
+    mut next_tx: RotaryCanon,
+    mut forward_tx: RotaryCanon,
 ) -> Result<(), SlotWorkerError>
 where
     SP: AsyncSlotProcessor,
@@ -34,7 +35,7 @@ where
                 let result = processor.process(data).await;
 
                 for forward in result.forward {
-                    if !next_tx.fire(forward)? {
+                    if !forward_tx.fire(forward)? {
                         println!("[{}][warn] dropped packet", config.name);
                     }
                 }
@@ -45,7 +46,7 @@ where
                     }
                 }
             },
-            SlotPacket::Forward(tun_packet) => {
+            SlotPacket::Next(tun_packet) => {
                 if !next_tx.fire(tun_packet)? {
                     println!("[{}][warn] dropped packet", config.name);
                 }

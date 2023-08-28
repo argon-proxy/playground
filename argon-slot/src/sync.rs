@@ -64,14 +64,17 @@ where
     fn start_worker(
         &mut self,
         entry_rx: RotaryTarget,
-        next_tx: RotaryCanon,
         exit_tx: RotaryCanon,
+        next_tx: RotaryCanon,
+        forward_tx: Option<RotaryCanon>,
     ) -> Result<SlotWorkerHandle, ArgonSlotError> {
         let processor = self.processor.clone();
         let config = self.config.clone();
 
+        let forward_tx = forward_tx.unwrap_or(next_tx.clone());
+
         let handle = tokio::spawn(worker::sync::run_worker(
-            processor, config, entry_rx, next_tx, exit_tx,
+            processor, config, entry_rx, exit_tx, next_tx, forward_tx,
         ));
 
         Ok(SlotWorkerHandle { handle })

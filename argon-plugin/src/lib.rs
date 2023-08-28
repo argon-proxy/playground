@@ -74,9 +74,7 @@ macro_rules! argon_plugin {
                     SlotPacket::Event(event_to_cevent(event))
                 },
                 SlotPacket::Data(data) => SlotPacket::Data(data_to_cdata(data)),
-                SlotPacket::Forward(tun_packet) => {
-                    SlotPacket::Forward(tun_packet)
-                },
+                SlotPacket::Next(tun_packet) => SlotPacket::Next(tun_packet),
             }
         }
 
