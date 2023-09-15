@@ -1,5 +1,4 @@
 # Argon
-![test result](https://github.com/argon-proxy/playground/)
 
 ## About
 
